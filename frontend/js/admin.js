@@ -1,93 +1,113 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel do Administrador - Gestão</title>
-    <link rel="stylesheet" href="/frontend/css/styles.css">
-</head>
-<body>
-    <header>
-        <h1>⚙️ Painel do Administrador</h1>
-        <p>Gestão de Efetivo e Histórico Global</p>
-    </header>
+document.addEventListener("DOMContentLoaded", () => {
+    carregarPorteiros();
+});
+
+// Cadastrar novo Porteiro
+document.getElementById("form-admin").addEventListener("submit", async (e) => {
+    e.preventDefault();
     
-    <main>
-        <nav class="tabs">
-            <button class="tab-btn active" onclick="switchTab('gerenciar-efetivo')">Gerenciar Efetivo</button>
-            <button class="tab-btn" onclick="switchTab('historico-tab')">Histórico Global</button>
-        </nav>
+    const graduacao = document.getElementById("porteiro-graduacao").value;
+    const nome_guerra = document.getElementById("porteiro-nome-guerra").value;
+    const nome_completo = document.getElementById("porteiro-nome").value;
+    const login = document.getElementById("porteiro-login").value;
+    const pin = document.getElementById("porteiro-pin").value;
 
-        <div id="gerenciar-efetivo" class="tab-content active">
-            <section id="gerenciar-porteiro">
-                <h2>Cadastrar / Editar Porteiro</h2>
-                <form id="form-admin">
-                    <input type="hidden" id="porteiro-id">
-                    <input type="text" id="porteiro-graduacao" placeholder="Graduação (ex: Sd, Cb, Sgt)" required>
-                    <input type="text" id="porteiro-nome-guerra" placeholder="Nome de Guerra" required>
-                    <input type="text" id="porteiro-nome" placeholder="Nome Completo" required>
-                    <input type="text" id="porteiro-login" placeholder="Login de Acesso" required>
-                    <input type="text" id="porteiro-pin" placeholder="PIN da Cancela" required>
-                    <button type="submit" id="btn-salvar">Salvar Porteiro</button>
-                    <button type="button" id="btn-cancelar" style="display: none; background-color: #dc3545;" onclick="cancelarEdicao()">Cancelar</button>
-                </form>
-            </section>
+    const id = document.getElementById("porteiro-id").value;
+    const payload = { graduacao, nome_guerra, nome_completo, login };
+    if (pin) payload.pin = pin; // Só envia o PIN se foi preenchido (importante para não sobrescrever com vazio na edição)
 
-            <hr>
+    let url = "/api/porteiros/";
+    let method = "POST";
+    let msgSucesso = "Porteiro cadastrado com sucesso!";
 
-            <section id="lista-efetivo">
-                <h2>Efetivo Cadastrado</h2>
-                <table id="tabela-porteiros" style="table-layout: fixed; width: 100%;">
-                    <colgroup>
-                        <col style="width: 5%;"> <col style="width: 10%;"> <col style="width: 15%;"> <col style="width: 30%;"> <col style="width: 15%;"> <col style="width: 10%;"> <col style="width: 15%;">
-                    </colgroup>
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Grad</th>
-                            <th>Guerra</th>
-                            <th>Nome Completo</th>
-                            <th>Login</th>
-                            <th>PIN</th>
-                            <th>Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tbody-porteiros"></tbody>
-                </table>
-            </section>
-        </div>
+    if (id) {
+        url = `/api/porteiros/${id}`;
+        method = "PUT";
+        msgSucesso = "Porteiro atualizado com sucesso!";
+    }
 
-        <div id="historico-tab" class="tab-content">
-            <h2>📜 Histórico de Movimentações</h2>
-            <section id="filtros-historico" style="background: #f4f4f4; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
-                <input type="date" id="filtro-data-inicio">
-                <input type="date" id="filtro-data-fim">
-                <select id="filtro-empresa">
-                    <option value="">Todas Empresas</option>
-                    <option value="Correios">Correios</option>
-                    <option value="Mercado Livre">Mercado Livre</option>
-                    <option value="Shopee">Shopee</option>
-                    <option value="Outros">Outros</option>
-                </select>
-                <button onclick="carregarHistorico()" style="padding: 5px 20px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">Filtrar</button>
-            </section>
-            
-            <table id="tabela-historico" style="width: 100%;">
-                <thead>
-                    <tr>
-                        <th>Data/Hora</th>
-                        <th>Destinatário/Descrição</th>
-                        <th>Empresa</th>
-                        <th>Status</th>
-                        <th>Detalhes Entrega</th>
-                    </tr>
-                </thead>
-                <tbody id="lista-historico"></tbody>
-            </table>
-        </div>
-    </main>
+    const response = await fetch(url, {
+        method: method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+    });
 
-    <script src="/frontend/js/admin.js"></script>
-    <script src="/frontend/js/historico.js"></script>
-</body>
-</html>
+    if (response.ok) {
+        cancelarEdicao(); // Limpa o form e reseta os botões
+        carregarPorteiros();
+        alert(msgSucesso);
+    } else {
+        const error = await response.json();
+        alert("Erro: " + (error.detail || "Falha ao cadastrar porteiro."));
+    }
+});
+
+// Listar Efetivo na Tabela
+async function carregarPorteiros() {
+    const response = await fetch("/api/porteiros/");
+    if (!response.ok) return;
+
+    const porteiros = await response.json();
+    const tbody = document.getElementById("tbody-porteiros");
+    tbody.innerHTML = "";
+
+    porteiros.forEach(p => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td>${p.id}</td>
+            <td>${p.graduacao}</td>
+            <td>${p.nome_guerra}</td>
+            <td>${p.nome_completo}</td>
+            <td>${p.login}</td>
+            <td>****</td> 
+            <td>
+                <button style="background-color: #ffc107; color: #000; border: none; padding: 5px 10px; cursor: pointer; margin-right: 5px;" onclick="prepararEdicao(${p.id}, '${p.graduacao}', '${p.nome_guerra}', '${p.nome_completo}', '${p.login}')">Editar</button>
+                <button style="background-color: #dc3545;" onclick="deletarPorteiro(${p.id})">Excluir</button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+// Excluir Porteiro
+window.deletarPorteiro = async function(id) {
+    if (!confirm("Tem certeza que deseja remover este militar do acesso?")) return;
+
+    const response = await fetch(`/api/porteiros/${id}`, {
+        method: "DELETE"
+    });
+
+    if (response.ok) {
+        carregarPorteiros();
+    } else {
+        alert("Erro ao excluir porteiro.");
+    }
+};
+
+window.prepararEdicao = function(id, graduacao, nome_guerra, nome_completo, login) {
+    document.getElementById("porteiro-id").value = id;
+    document.getElementById("porteiro-graduacao").value = graduacao;
+    document.getElementById("porteiro-nome-guerra").value = nome_guerra;
+    document.getElementById("porteiro-nome").value = nome_completo;
+    document.getElementById("porteiro-login").value = login;
+    
+    const pinInput = document.getElementById("porteiro-pin");
+    pinInput.value = "";
+    pinInput.placeholder = "Novo PIN (vazio para manter)";
+    pinInput.removeAttribute("required");
+
+    document.getElementById("btn-salvar").textContent = "Atualizar Porteiro";
+    document.getElementById("btn-cancelar").style.display = "inline-block";
+};
+
+window.cancelarEdicao = function() {
+    document.getElementById("form-admin").reset();
+    document.getElementById("porteiro-id").value = "";
+    
+    const pinInput = document.getElementById("porteiro-pin");
+    pinInput.placeholder = "PIN da Cancela";
+    pinInput.setAttribute("required", "true");
+
+    document.getElementById("btn-salvar").textContent = "Salvar Porteiro";
+    document.getElementById("btn-cancelar").style.display = "none";
+};

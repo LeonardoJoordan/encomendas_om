@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.services import db_crud
 from app.core.security import hash_pin
-from app.models.schemas import SessionLocal
+from app.models.schemas import SessionLocal, Porteiro
 
 app = FastAPI(title="Sistema de Encomendas OM")
 
@@ -29,6 +29,8 @@ class LoteEntrada(BaseModel):
 
 class BaixaEncomenda(BaseModel):
     pin: str
+    recebedor_nome: str
+    observacao_baixa: Optional[str] = ""
 
 class PorteiroCreate(BaseModel):
     graduacao: str
@@ -36,6 +38,13 @@ class PorteiroCreate(BaseModel):
     nome_completo: str
     login: str
     pin: str
+
+class PorteiroUpdate(BaseModel):
+    graduacao: str
+    nome_guerra: str
+    nome_completo: str
+    login: str
+    pin: Optional[str] = None
 
 # Dependência para injetar o DB nas rotas
 def get_db():
@@ -106,7 +115,7 @@ async def dar_baixa(encomenda_id: int, dados: BaixaEncomenda, db: Session = Depe
     if not porteiro:
         raise HTTPException(status_code=403, detail="PIN da Cancela inválido.")
         
-    encomenda = db_crud.dar_baixa_encomenda(db, encomenda_id, porteiro.id)
+    encomenda = db_crud.dar_baixa_encomenda(db, encomenda_id, porteiro.id, dados.recebedor_nome, dados.observacao_baixa)
     if not encomenda:
         raise HTTPException(status_code=404, detail="Encomenda não encontrada ou já entregue.")
         
@@ -118,10 +127,14 @@ def obter_historico(
     data_inicio: Optional[str] = None, 
     data_fim: Optional[str] = None, 
     status: Optional[str] = None,
+    destinatario: Optional[str] = None,
+    recebedor_nome: Optional[str] = None,
+    porteiro_nome_guerra: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
-    # Converte strings para objetos datetime se necessário aqui
-    return db_crud.get_historico_completo(db, data_inicio, data_fim, status)
+    return db_crud.get_historico_completo(
+        db, data_inicio, data_fim, status, destinatario, recebedor_nome, porteiro_nome_guerra
+    )
 
 # ==========================================
 # 🛡️ ROTAS DO ADMIN (Gestão de Porteiros)
@@ -143,6 +156,31 @@ def deletar_porteiro(porteiro_id: int, db: Session = Depends(get_db)):
     if not porteiro:
         raise HTTPException(status_code=404, detail="Porteiro não encontrado.")
     return {"message": "Porteiro removido com sucesso."}
+
+@app.put("/api/porteiros/{porteiro_id}")
+def atualizar_porteiro(porteiro_id: int, dados: PorteiroUpdate, db: Session = Depends(get_db)):
+    porteiro = db.query(Porteiro).filter(Porteiro.id == porteiro_id).first()
+    if not porteiro:
+        raise HTTPException(status_code=404, detail="Porteiro não encontrado.")
+    
+    # Impede que dois militares tenham o mesmo login
+    if dados.login != porteiro.login:
+        login_existente = db.query(Porteiro).filter(Porteiro.login == dados.login).first()
+        if login_existente:
+            raise HTTPException(status_code=400, detail="Login já está em uso.")
+
+    # Atualiza os dados
+    porteiro.graduacao = dados.graduacao
+    porteiro.nome_guerra = dados.nome_guerra
+    porteiro.nome_completo = dados.nome_completo
+    porteiro.login = dados.login
+    
+    # Só gera um novo hash se um novo PIN foi digitado no front
+    if dados.pin:
+        porteiro.pin_hash = hash_pin(dados.pin)
+        
+    db.commit()
+    return {"message": "Porteiro atualizado com sucesso."}
 
 # ==========================================
 # 🌐 SERVIDOR DE ARQUIVOS (Frontend)

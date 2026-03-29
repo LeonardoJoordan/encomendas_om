@@ -15,7 +15,30 @@ def get_db():
 # ==========================================
 
 def get_encomendas_ativas(db: Session):
-    return db.query(schemas.Encomenda).filter(schemas.Encomenda.status == "Na Portaria").all()
+    # Faz o join com LogOperacao e Porteiro para pegar quem deu entrada
+    resultados = db.query(
+        schemas.Encomenda,
+        schemas.Porteiro.graduacao,
+        schemas.Porteiro.nome_guerra
+    ).join(
+        schemas.LogOperacao, schemas.LogOperacao.encomenda_id == schemas.Encomenda.id
+    ).join(
+        schemas.Porteiro, schemas.Porteiro.id == schemas.LogOperacao.porteiro_id
+    ).filter(
+        schemas.Encomenda.status == "Na Portaria",
+        schemas.LogOperacao.acao == "ENTRADA"
+    ).all()
+
+    # Formata a saída mesclando os dados da Encomenda com os dados do Porteiro
+    encomendas_formatadas = []
+    for enc, grad, nome in resultados:
+        enc_dict = enc.__dict__.copy()
+        enc_dict.pop('_sa_instance_state', None) # Remove metadados internos do SQLAlchemy
+        enc_dict['porteiro_graduacao'] = grad
+        enc_dict['porteiro_nome_guerra'] = nome
+        encomendas_formatadas.append(enc_dict)
+
+    return encomendas_formatadas
 
 def criar_encomendas_lote(db: Session, encomendas_lista: list, porteiro_id: int):
     """Recebe uma lista de dicionários com os dados de várias encomendas e salva todas na mesma transação."""
@@ -43,11 +66,13 @@ def criar_encomendas_lote(db: Session, encomendas_lista: list, porteiro_id: int)
     db.commit() # Salva tudo de uma vez (Encomendas + Logs)
     return novas_encomendas
 
-def dar_baixa_encomenda(db: Session, encomenda_id: int, porteiro_id: int):
+def dar_baixa_encomenda(db: Session, encomenda_id: int, porteiro_id: int, recebedor_nome: str = "", observacao_baixa: str = ""):
     encomenda = db.query(schemas.Encomenda).filter(schemas.Encomenda.id == encomenda_id).first()
     if encomenda and encomenda.status == "Na Portaria":
         encomenda.status = "Entregue"
         encomenda.data_entrega = datetime.now()
+        encomenda.recebedor_nome = recebedor_nome
+        encomenda.observacao_baixa = observacao_baixa
         
         novo_log = schemas.LogOperacao(
             encomenda_id=encomenda.id,
@@ -90,14 +115,28 @@ def deletar_porteiro(db: Session, porteiro_id: int):
         db.commit()
     return porteiro
 
-def get_historico_completo(db: Session, data_inicio=None, data_fim=None, status=None, porteiro_id=None):
+def get_historico_completo(db: Session, data_inicio=None, data_fim=None, status=None, destinatario=None, recebedor_nome=None, porteiro_nome_guerra=None):
     query = db.query(schemas.Encomenda)
-    
+
+    if porteiro_nome_guerra:
+        query = query.join(
+            schemas.LogOperacao, schemas.LogOperacao.encomenda_id == schemas.Encomenda.id
+        ).join(
+            schemas.Porteiro, schemas.Porteiro.id == schemas.LogOperacao.porteiro_id
+        ).filter(
+            schemas.Porteiro.nome_guerra.ilike(f"%{porteiro_nome_guerra}%"),
+            schemas.LogOperacao.acao == "ENTRADA"
+        )
+
     if data_inicio:
         query = query.filter(schemas.Encomenda.data_chegada >= data_inicio)
     if data_fim:
         query = query.filter(schemas.Encomenda.data_chegada <= data_fim)
     if status:
         query = query.filter(schemas.Encomenda.status == status)
-        
+    if destinatario:
+        query = query.filter(schemas.Encomenda.destinatario.ilike(f"%{destinatario}%"))
+    if recebedor_nome:
+        query = query.filter(schemas.Encomenda.recebedor_nome.ilike(f"%{recebedor_nome}%"))
+
     return query.order_by(schemas.Encomenda.data_chegada.desc()).all()

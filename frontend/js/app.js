@@ -20,6 +20,7 @@ function adicionarLinhaEncomenda() {
             <option value="Moto Entrega">Moto Entrega Local</option>
             <option value="Outros">Outros</option>
         </select>
+        <input type="text" class="entregador" placeholder="Nome entregador" required>
         <button type="button" class="btn-remover" onclick="this.parentElement.remove()">❌</button>
     `;
     container.appendChild(novaLinha);
@@ -38,11 +39,16 @@ async function carregarListaBaixa() {
 
     encomendas.forEach(enc => {
         const tr = document.createElement("tr");
+        const dataFormatada = new Date(enc.data_chegada).toLocaleString('pt-BR');
         tr.innerHTML = `
             <td>${enc.id}</td>
+            <td>${dataFormatada}</td>            
             <td><strong>${enc.destinatario}</strong></td>
             <td>${enc.descricao}</td>
-            <td><button onclick="abrirModalBaixa(${enc.id})">Entregar</button></td>
+            <td>${enc.observacoes || '-'}</td>
+            <td>${enc.empresa_transporte || '-'}</td>
+            <td>${enc.porteiro_graduacao} ${enc.porteiro_nome_guerra}</td>
+            <td><button style="background-color: #007bff; color: white; border: none; padding: 5px 10px; cursor: pointer; border-radius: 4px;" onclick="abrirModalBaixa(${enc.id})">Entregar</button></td>
         `;
         tbody.appendChild(tr);
     });
@@ -122,6 +128,7 @@ function inicializarPainelOperacao() {
             return;
         }
 
+        const id = document.getElementById("encomenda-id-baixa").value;
         const response = await fetch(`/api/encomendas/${id}/baixa`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
