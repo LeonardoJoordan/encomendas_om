@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel da Cancela - Encomendas</title>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+    <header>
+        <h1>📦 Encomendas na Portaria</h1>
+        <p>Atualização em tempo real</p>
+    </header>
+    <main>
+        <table id="tabela-encomendas">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Destinatário</th>
+                    <th>Descrição</th>
+                    <th>Data/Hora de Chegada</th>
+                </tr>
+            </thead>
+            <tbody id="lista-encomendas">
+                </tbody>
+        </table>
+    </main>
+    <script src="/js/ws_client.js"></script>
+</body>
+</html>

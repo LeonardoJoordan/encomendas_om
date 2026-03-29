@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Operação - Portaria</title>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+    <header>
+        <h1>🛡️ Painel do Porteiro</h1>
+    </header>
+    <main>
+        <section id="nova-encomenda">
+            <h2>Registrar Entrada</h2>
+            <form id="form-entrada">
+                <input type="text" id="destinatario" placeholder="Nome do Destinatário" required>
+                <input type="text" id="descricao" placeholder="Descrição/Pacote" required>
+                <input type="password" id="pin-entrada" placeholder="Seu PIN de Porteiro" required>
+                <button type="submit">Dar Entrada</button>
+            </form>
+        </section>
+
+        <hr>
+
+        <section id="baixa-encomenda">
+            <h2>Dar Baixa (Entregar)</h2>
+            <table id="tabela-baixa">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Destinatário</th>
+                        <th>Descrição</th>
+                        <th>Ação</th>
+                    </tr>
+                </thead>
+                <tbody id="lista-baixa">
+                    </tbody>
+            </table>
+        </section>
+    </main>
+
+    <div id="modal-pin" style="display: none; position: fixed; top: 20%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border: 1px solid #ccc; box-shadow: 0 0 10px rgba(0,0,0,0.5);">
+        <h3>Confirmar Entrega</h3>
+        <input type="hidden" id="encomenda-id-baixa">
+        <input type="password" id="pin-baixa" placeholder="Seu PIN de Porteiro" required>
+        <button id="btn-confirmar-baixa">Confirmar</button>
+        <button onclick="document.getElementById('modal-pin').style.display='none'">Cancelar</button>
+    </div>
+
+    <script src="/js/app.js"></script>
+</body>
+</html>
