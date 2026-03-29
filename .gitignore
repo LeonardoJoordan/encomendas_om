@@ -1,0 +1,21 @@
+# Ambientes Virtuais
+venv/
+env/
+.env
+
+# Banco de Dados
+database/*.sqlite3
+
+# Python Cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Compilação Nuitka
+build/
+*.bin
+*.exe
+
+# IDEs
+.vscode/
+.idea/

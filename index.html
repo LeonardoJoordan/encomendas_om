@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menu Principal - Encomendas OM</title>
+    <link rel="stylesheet" href="frontend/css/styles.css">
+    <style>
+        .menu-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            margin-top: 50px;
+        }
+        .menu-btn {
+            padding: 15px 30px;
+            font-size: 18px;
+            width: 300px;
+            text-align: center;
+            text-decoration: none;
+            background-color: #007bff;
+            color: white;
+            border-radius: 8px;
+            font-weight: bold;
+            display: inline-block;
+        }
+        .menu-btn:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <header style="text-align: center;">
+        <h1>📦 Sistema de Encomendas OM</h1>
+        <p>Selecione o módulo de acesso</p>
+    </header>
+    <main class="menu-container">
+        <a href="frontend/cancela.html" class="menu-btn">Ver Encomendas</a>
+        <a href="frontend/operacao.html" class="menu-btn">Painel da Cancela</a>
+        <a href="frontend/admin.html" class="menu-btn">Administrador</a>
+    </main>
+</body>
+</html>

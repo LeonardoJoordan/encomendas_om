@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel do Administrador - Gestão</title>
+    <link rel="stylesheet" href="/frontend/css/styles.css">
+</head>
+<body>
+    <header>
+        <h1>⚙️ Painel do Administrador</h1>
+        <p>Gestão de Efetivo e Acessos</p>
+    </header>
+    <main>
+        <section id="gerenciar-porteiro">
+            <h2>Cadastrar / Editar Porteiro</h2>
+            <form id="form-admin">
+                <input type="hidden" id="porteiro-id">
+                <input type="text" id="porteiro-graduacao" placeholder="Graduação (ex: Sd, Cb, Sgt)" required>
+                <input type="text" id="porteiro-nome-guerra" placeholder="Nome de Guerra" required>
+                <input type="text" id="porteiro-nome" placeholder="Nome Completo" required>
+                <input type="text" id="porteiro-login" placeholder="Login de Acesso" required>
+                <input type="text" id="porteiro-pin" placeholder="PIN da Cancela" required>
+                <button type="submit" id="btn-salvar">Salvar Porteiro</button>
+                <button type="button" id="btn-cancelar" style="display: none; background-color: #dc3545;" onclick="cancelarEdicao()">Cancelar</button>
+            </form>
+        </section>
+
+        <hr>
+
+        <section id="lista-efetivo">
+            <h2>Efetivo Cadastrado</h2>
+            <table id="tabela-porteiros" style="table-layout: fixed; width: 100%;">
+                <colgroup>
+                    <col style="width: 3.5%;">  <col style="width: 7.1%;">  <col style="width: 14.3%;"> <col style="width: 35.7%;"> <col style="width: 14.3%;"> <col style="width: 14.3%;"> <col style="width: 10.8%;"> </colgroup>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Grad</th>
+                        <th>Nome de Guerra</th>
+                        <th>Nome</th>
+                        <th>Login</th>
+                        <th>PIN</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="tbody-porteiros">
+                    </tbody>
+            </table>
+        </section>
+    </main>
+
+    <script src="/frontend/js/admin.js"></script>
+    <script src="/frontend/js/historico.js"></script>
+</body>
+</html>
