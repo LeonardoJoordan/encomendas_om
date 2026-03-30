@@ -22,6 +22,7 @@ class EncomendaItem(BaseModel):
     descricao: str
     observacoes: Optional[str] = ""
     empresa_transporte: str
+    entregador: str
 
 class LoteEntrada(BaseModel):
     encomendas: List[EncomendaItem]
@@ -109,9 +110,11 @@ async def registrar_lote_encomendas(lote: LoteEntrada, db: Session = Depends(get
     await manager.broadcast("atualizar")
     return {"message": f"{len(novas_encomendas)} encomendas registradas com sucesso."}
 
+# ROTA DE ENTREGAR A ENCOMENDA (DAR BAIXA)
 @app.put("/api/encomendas/{encomenda_id}/baixa")
-async def dar_baixa(encomenda_id: int, dados: BaixaEncomenda, db: Session = Depends(get_db)):
+async def dar_baixa_encomenda(encomenda_id: int, dados: BaixaEncomenda, db: Session = Depends(get_db)):
     porteiro = db_crud.get_porteiro_by_pin(db, hash_pin(dados.pin))
+    
     if not porteiro:
         raise HTTPException(status_code=403, detail="PIN da Cancela inválido.")
         
@@ -121,6 +124,29 @@ async def dar_baixa(encomenda_id: int, dados: BaixaEncomenda, db: Session = Depe
         
     await manager.broadcast("atualizar")
     return {"message": "Baixa realizada com sucesso."}
+
+
+# MODELO DE DADOS PARA EXCLUSÃO
+class CancelarEncomenda(BaseModel):
+    pin: str
+    motivo: str
+
+
+# ROTA DE EXCLUIR/CANCELAR A ENCOMENDA
+@app.put("/api/encomendas/{encomenda_id}/cancelar")
+async def cancelar_encomenda(encomenda_id: int, dados: CancelarEncomenda, db: Session = Depends(get_db)):
+    # Converte o PIN digitado para hash antes de verificar no banco
+    porteiro = db_crud.get_porteiro_by_pin(db, hash_pin(dados.pin))
+    
+    if not porteiro:
+        raise HTTPException(status_code=401, detail="PIN inválido")
+    
+    encomenda = db_crud.cancelar_encomenda(db, encomenda_id, porteiro.id, dados.motivo)
+    if not encomenda:
+        raise HTTPException(status_code=404, detail="Encomenda não encontrada ou já processada")
+    
+    await manager.broadcast("atualizar")
+    return {"msg": "Registro excluído com sucesso"}
 
 @app.get("/api/historico")
 def obter_historico(

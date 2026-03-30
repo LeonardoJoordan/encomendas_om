@@ -62,6 +62,47 @@
             color: #666;
             margin-bottom: 10px;
         }
+        
+        /* CSS EXCLUSIVO PARA IMPRESSÃO */
+        @media print {
+            @page { margin: 1.5cm; }
+            body { 
+                background: white; 
+                padding: 0; 
+                margin: 0;
+            }
+            /* Esconde os filtros e botões na hora de imprimir */
+            #filtros-historico, #info-resultados {
+                display: none !important;
+            }
+            /* Mostra o cabeçalho de impressão */
+            #cabecalho-impressao {
+                display: block !important;
+                margin-bottom: 20px;
+            }
+            /* Tira as cores de fundo dos status para economizar tinta e não ficar ilegível */
+            .status-badge {
+                border: 1px solid #000;
+                color: #000 !important;
+                background-color: transparent !important;
+                display: inline-block;
+                white-space: nowrap; /* Impede que o texto quebre em duas linhas */
+            }
+            table { 
+                border-collapse: collapse; 
+                width: 100%; 
+            }
+            th, td { 
+                border: 1px solid #ccc; 
+                padding: 6px; /* Reduz um pouco o espaçamento interno */
+                font-size: 10px; /* Reduz a fonte, funcionando como o zoom de 80% */
+            }
+        }
+
+        /* Esconde o cabeçalho de impressão na tela normal */
+        #cabecalho-impressao {
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -89,18 +130,22 @@
         </label>
         <button id="btn-filtrar" onclick="carregarHistorico()">🔍 Filtrar</button>
         <button id="btn-limpar" onclick="limparFiltros()">✖ Limpar</button>
+        <button id="btn-imprimir" onclick="imprimirRelatorio()" style="margin-left: auto; background-color: #17a2b8; color: white; border: none; border-radius: 4px; padding: 8px 20px; cursor: pointer; font-weight: bold;">🖨️ Imprimir Relatório</button>
     </section>
+
+    <div id="cabecalho-impressao"></div>
 
     <div id="info-resultados"></div>
 
     <table id="tabela-historico" style="width: 100%;">
         <thead>
             <tr>
-                <th>Datas</th>
-                <th>Destinatário</th>
-                <th>Empresa</th>
+                <th>Recebimento (Portaria)</th>
+                <th>Destinatário / Pacote</th>
+                <th>Transporte (Entregador)</th>
                 <th>Status</th>
-                <th>Recebido por</th>
+                <th>Quem Retirou</th>
+                <th>Entregue por</th>
             </tr>
         </thead>
         <tbody id="lista-historico">
@@ -146,25 +191,36 @@
                     const tr = document.createElement("tr");
                     const dataChegada = new Date(enc.data_chegada).toLocaleString('pt-BR');
                     const dataEntrega = enc.data_entrega ? new Date(enc.data_entrega).toLocaleString('pt-BR') : "-";
+                    const obsEntrega = enc.observacao_baixa ? `Obs: ${enc.observacao_baixa}` : "Obs: sem observações";
+                    const militarEntrega = enc.baixa_porteiro_grad ? `${enc.baixa_porteiro_grad} ${enc.baixa_porteiro_nome}` : "-";
+                    const obsTexto = enc.observacao_baixa ? enc.observacao_baixa : "sem observações";
+                    const militarEntregaInfo = enc.militar_entrega_grad ? `${enc.militar_entrega_grad} ${enc.militar_entrega_nome}` : "-";
 
                     tr.innerHTML = `
                         <td>
-                            <strong>Chegada:</strong> ${dataChegada}<br>
-                            <small>Entrega: ${dataEntrega}</small>
+                            <strong>${enc.porteiro_graduacao} ${enc.porteiro_nome_guerra}</strong><br>
+                            <small>${dataChegada}</small>
                         </td>
                         <td>
                             <strong>${enc.destinatario}</strong><br>
                             <small>${enc.descricao}</small>
                         </td>
-                        <td>${enc.empresa_transporte}</td>
                         <td>
-                            <span class="status-badge ${enc.status === 'Entregue' ? 'status-verde' : 'status-azul'}">
+                            <strong>${enc.empresa_transporte}</strong><br>
+                            <small>${enc.entregador || "s/i"}</small>
+                        </td>
+                        <td>
+                            <span class="status-badge" style="background-color: ${enc.status === 'Entregue' ? '#28a745' : (enc.status === 'Cancelado' ? '#dc3545' : '#007bff')};">
                                 ${enc.status}
                             </span>
                         </td>
                         <td>
-                            <strong>${enc.recebedor_nome || "-"}</strong><br>
-                            <small>${enc.observacao_baixa || ""}</small>
+                            <strong>${enc.status === 'Cancelado' ? '<span style="color: #dc3545;">Registro Cancelado</span>' : (enc.recebedor_nome || "Aguardando...")}</strong><br>
+                            <small style="color: #666;"><em>${enc.status === 'Na Portaria' ? "" : 'Obs: ' + obsTexto}</em></small>
+                        </td>
+                        <td>
+                            <strong>${militarEntregaInfo}</strong><br>
+                            <small>${enc.data_entrega ? dataEntrega : "-"}</small>
                         </td>
                     `;
                     tbody.appendChild(tr);
@@ -185,6 +241,60 @@
             document.getElementById("info-resultados").textContent = "";
             document.getElementById("lista-historico").innerHTML = 
                 `<tr><td colspan="5" style="text-align:center; color:#999;">Use os filtros acima para buscar.</td></tr>`;
+        }
+
+        function imprimirRelatorio() {
+            const tbody = document.getElementById("lista-historico");
+            
+            // Impede imprimir tela vazia
+            if (tbody.innerHTML.includes("Use os filtros") || tbody.innerHTML.includes("Nenhum resultado") || tbody.innerHTML.includes("Buscando")) {
+                alert("Por favor, realize uma busca com resultados antes de imprimir.");
+                return;
+            }
+
+            // Pega os valores atuais dos campos
+            const dataInicio = document.getElementById("filtro-data-inicio").value;
+            const dataFim = document.getElementById("filtro-data-fim").value;
+            const destinatario = document.getElementById("filtro-destinatario").value.trim();
+            const recebedor = document.getElementById("filtro-recebedor").value.trim();
+            const porteiro = document.getElementById("filtro-porteiro").value.trim();
+
+            let filtrosAplicados = [];
+
+            // Helper para formatar data (YYYY-MM-DD para DD/MM/YYYY)
+            const formataData = (dataStr) => {
+                const [ano, mes, dia] = dataStr.split('-');
+                return `${dia}/${mes}/${ano}`;
+            };
+
+            // Monta o texto de período
+            if (dataInicio || dataFim) {
+                let periodo = "Período: ";
+                if (dataInicio && dataFim) periodo += `de ${formataData(dataInicio)} a ${formataData(dataFim)}`;
+                else if (dataInicio) periodo += `A partir de ${formataData(dataInicio)}`;
+                else if (dataFim) periodo += `Até ${formataData(dataFim)}`;
+                filtrosAplicados.push(periodo);
+            }
+            
+            // Monta os outros textos
+            if (destinatario) filtrosAplicados.push(`Destinatário: ${destinatario}`);
+            if (recebedor) filtrosAplicados.push(`Recebedor final: ${recebedor}`);
+            if (porteiro) filtrosAplicados.push(`Porteiro (Cancela): ${porteiro}`);
+
+            // Define o texto final
+            let textoFiltro = filtrosAplicados.length > 0 ? filtrosAplicados.join(" | ") : "Todos os registros";
+
+            // Injera o texto no cabeçalho de impressão
+            const cabecalho = document.getElementById("cabecalho-impressao");
+            const dataAtual = new Date().toLocaleString('pt-BR');
+            cabecalho.innerHTML = `
+                <h2 style="margin-bottom: 5px; border-bottom: 2px solid #000; padding-bottom: 5px; text-transform: uppercase;">Relatório de Movimentação - Cancela</h2>
+                <p style="font-size: 14px; margin-top: 5px;"><strong>Filtros aplicados:</strong> ${textoFiltro}</p>
+                <p style="font-size: 12px; color: #555; text-align: right; margin-bottom: 15px;"><em>Gerado em: ${dataAtual}</em></p>
+            `;
+
+            // Aciona o painel de impressão do navegador
+            window.print();
         }
     </script>
 </body>

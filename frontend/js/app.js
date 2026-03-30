@@ -48,7 +48,10 @@ async function carregarListaBaixa() {
             <td>${enc.observacoes || '-'}</td>
             <td>${enc.empresa_transporte || '-'}</td>
             <td>${enc.porteiro_graduacao} ${enc.porteiro_nome_guerra}</td>
-            <td><button style="background-color: #007bff; color: white; border: none; padding: 5px 10px; cursor: pointer; border-radius: 4px;" onclick="abrirModalBaixa(${enc.id})">Entregar</button></td>
+            <td>
+                <button style="background-color: #007bff; color: white; border: none; padding: 5px 10px; cursor: pointer; border-radius: 4px; margin-right: 5px;" onclick="abrirModalBaixa(${enc.id})">Entregar</button>
+                <button style="background-color: #dc3545; color: white; border: none; padding: 5px 10px; cursor: pointer; border-radius: 4px;" onclick="abrirModalCancelar(${enc.id})" title="Excluir Registro">✖</button>
+            </td>
         `;
         tbody.appendChild(tr);
     });
@@ -63,6 +66,16 @@ function abrirModalBaixa(id) {
 }
 
 window.abrirModalBaixa = abrirModalBaixa;
+
+function abrirModalCancelar(id) {
+    document.getElementById("encomenda-id-cancelar").value = id;
+    document.getElementById("modal-cancelar").style.display = "block";
+    document.getElementById("motivo-cancelar").value = "";
+    document.getElementById("pin-cancelar").value = "";
+    document.getElementById("motivo-cancelar").focus();
+}
+
+window.abrirModalCancelar = abrirModalCancelar;
 
 function inicializarPainelOperacao() {
     const formEntrada = document.getElementById("form-entrada");
@@ -91,7 +104,8 @@ function inicializarPainelOperacao() {
                 destinatario: linha.querySelector(".destinatario").value,
                 descricao: linha.querySelector(".descricao").value,
                 observacoes: linha.querySelector(".observacoes").value,
-                empresa_transporte: linha.querySelector(".empresa-transporte").value
+                empresa_transporte: linha.querySelector(".empresa-transporte").value,
+                entregador: linha.querySelector(".entregador").value
             });
         });
 
@@ -143,6 +157,34 @@ function inicializarPainelOperacao() {
             alert("Erro: " + (error.detail || "Falha ao dar baixa. Verifique o PIN."));
         }
     });
+
+    const botaoConfirmarCancelar = document.getElementById("btn-confirmar-cancelar");
+    if (botaoConfirmarCancelar) {
+        botaoConfirmarCancelar.addEventListener("click", async () => {
+            const pin = document.getElementById("pin-cancelar").value;
+            const motivo = document.getElementById("motivo-cancelar").value;
+
+            if (!pin || !motivo) {
+                alert("O PIN e o Motivo são obrigatórios para exclusão.");
+                return;
+            }
+
+            const id = document.getElementById("encomenda-id-cancelar").value;
+            const response = await fetch(`/api/encomendas/${id}/cancelar`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ pin, motivo })
+            });
+
+            if (response.ok) {
+                document.getElementById("modal-cancelar").style.display = "none";
+                carregarListaBaixa();
+            } else {
+                const error = await response.json();
+                alert("Erro: " + (error.detail || "Falha ao excluir. Verifique o PIN."));
+            }
+        });
+    }
 }
 
 document.addEventListener("DOMContentLoaded", inicializarPainelOperacao);
