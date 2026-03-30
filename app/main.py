@@ -162,6 +162,31 @@ def obter_historico(
         db, data_inicio, data_fim, status, destinatario, recebedor_nome, porteiro_nome_guerra
     )
 
+class LoginRequest(BaseModel):
+    login: str
+    senha: str
+
+@app.post("/api/login")
+def realizar_login(dados: LoginRequest, db: Session = Depends(get_db)):
+    if dados.login == "admin" and dados.senha == "admin123":
+        return {
+            "token": "auth_admin_token_secreto", 
+            "role": "admin", 
+            "nome": "Administrador"
+        }
+
+    # 2. Se não for admin, verifica se é um Porteiro/Cancela válido
+    porteiro = db.query(Porteiro).filter(Porteiro.login == dados.login).first()
+    
+    if porteiro and porteiro.pin_hash == hash_pin(dados.senha):
+        return {
+            "token": f"auth_cancela_{porteiro.id}", 
+            "role": "cancela", 
+            "nome": porteiro.nome_guerra
+        }
+
+    raise HTTPException(status_code=401, detail="Usuário ou senha inválidos")
+
 # ==========================================
 # 🛡️ ROTAS DO ADMIN (Gestão de Porteiros)
 # ==========================================

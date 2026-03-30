@@ -7,13 +7,21 @@
     <link rel="stylesheet" href="/frontend/css/styles.css">
 </head>
 <body>
-    <header>
-        <h1>⚙️ Painel do Administrador</h1>
-        <p>Gestão de Efetivo e Acessos</p>
+    <header style="display: flex; justify-content: space-between; align-items: center;">
+        <h1 style="margin: 0;">🛡️ Área Administrativa</h1>
+        <button onclick="fazerLogout()" style="background-color: #dc3545; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold;">🚪 Sair</button>
     </header>
+
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('cadastro-tab')">Cadastro de Cancelas</button>
+        <button class="tab-btn" onclick="switchTab('historico-tab')">Histórico de Movimentação</button>
+    </div>
+
+    <div id="cadastro-tab" class="tab-content active">
+
     <main>
         <section id="gerenciar-porteiro">
-            <h2>Cadastrar / Editar Porteiro</h2>
+            <h2>Cadastrar / Editar Cancela</h2>
             <form id="form-admin">
                 <input type="hidden" id="porteiro-id">
                 <input type="text" id="porteiro-graduacao" placeholder="Graduação (ex: Sd, Cb, Sgt)" required>
@@ -50,6 +58,37 @@
         </section>
     </main>
 
+    </div> <div id="historico-tab" class="tab-content">
+        <iframe src="historico.html" width="100%" height="850px" style="border: none; border-radius: 8px; background: white;"></iframe>
+    </div>
+
     <script src="/frontend/js/admin.js"></script>
+    <script>
+        function switchTab(tabId) {
+            // 1. Esconde todos os painéis e tira a cor verde de todos os botões
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+
+            // 2. Mostra o painel correto
+            document.getElementById(tabId).classList.add('active');
+
+            // 3. Pinta o botão clicado de verde
+            const botaoAtivo = document.querySelector(`button[onclick="switchTab('${tabId}')"]`);
+            if (botaoAtivo) {
+                botaoAtivo.classList.add('active');
+            }
+        }
+    </script>
+    <script>
+        function fazerLogout() {
+            // Limpa o crachá da memória
+            localStorage.removeItem('userToken');
+            localStorage.removeItem('userRole');
+            localStorage.removeItem('userName');
+            
+            // Redireciona para a página inicial
+            window.location.href = '/';
+        }
+    </script>
 </body>
 </html>
