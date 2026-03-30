@@ -5,6 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel do Administrador - Gestão</title>
     <link rel="stylesheet" href="/frontend/css/styles.css">
+    <script>
+        // O CADEADO DO ADMIN (Memória Volátil)
+        const userRole = sessionStorage.getItem('userRole');
+        
+        // Se não for admin, chuta de volta para o login
+        if (userRole !== 'admin') {
+            window.location.href = '/frontend/login.html'; 
+        }
+    </script>
 </head>
 <body>
     <header style="display: flex; justify-content: space-between; align-items: center;">
@@ -82,9 +91,9 @@
     <script>
         function fazerLogout() {
             // Limpa o crachá da memória
-            localStorage.removeItem('userToken');
-            localStorage.removeItem('userRole');
-            localStorage.removeItem('userName');
+            sessionStorage.removeItem('userToken');
+            sessionStorage.removeItem('userRole');
+            sessionStorage.removeItem('userName');
             
             // Redireciona para a página inicial
             window.location.href = '/';

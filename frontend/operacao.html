@@ -39,6 +39,15 @@
             width: 100%;
         }
     </style>
+    <script>
+        // O CADEADO DA OPERAÇÃO (Memória Volátil)
+        const userRole = sessionStorage.getItem('userRole');
+        
+        // Se o papel não for nem 'cancela' e nem 'admin', bloqueia
+        if (userRole !== 'cancela' && userRole !== 'admin') {
+            window.location.href = '/frontend/login.html'; 
+        }
+    </script>
 </head>
 <body>
     <header style="display: flex; justify-content: space-between; align-items: center;">
@@ -156,9 +165,9 @@
     </script>
     <script>
         function fazerLogout() {
-            localStorage.removeItem('userToken');
-            localStorage.removeItem('userRole');
-            localStorage.removeItem('userName');
+            sessionStorage.removeItem('userToken');
+            sessionStorage.removeItem('userRole');
+            sessionStorage.removeItem('userName');
             window.location.href = '/';
         }
     </script>

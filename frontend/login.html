@@ -115,10 +115,10 @@
                     // 3. Recebeu o Crachá Digital!
                     const data = await response.json();
                     
-                    // Guarda no bolso (Memória do Navegador)
-                    localStorage.setItem('userToken', data.token);
-                    localStorage.setItem('userRole', data.role);
-                    localStorage.setItem('userName', data.nome);
+                    // Guarda na memória temporária da ABA (Morre ao fechar)
+                    sessionStorage.setItem('userToken', data.token);
+                    sessionStorage.setItem('userRole', data.role);
+                    sessionStorage.setItem('userName', data.nome);
 
                     // 4. Redireciona o militar para a sala certa com base na patente (role)
                     if (data.role === 'admin') {
