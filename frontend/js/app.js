@@ -188,3 +188,23 @@ function inicializarPainelOperacao() {
 }
 
 document.addEventListener("DOMContentLoaded", inicializarPainelOperacao);
+
+async function abrirModalIDs() {
+    const modal = document.getElementById('modal-lista-ids');
+    const tbody = document.getElementById('corpo-tabela-ids');
+    modal.style.display = 'flex';
+    
+    try {
+        const response = await fetch('/api/porteiros/publico'); // Criaremos esta rota simples
+        const porteiros = await response.json();
+        
+        tbody.innerHTML = porteiros.map(p => `
+            <tr>
+                <td style="font-weight:bold; color:#007bff; font-size:1.2em;">${p.numero_id}</td>
+                <td>${p.graduacao} ${p.nome_guerra}</td>
+            </tr>
+        `).join('');
+    } catch (e) {
+        tbody.innerHTML = "<tr><td colspan='2'>Erro ao carregar lista.</td></tr>";
+    }
+}

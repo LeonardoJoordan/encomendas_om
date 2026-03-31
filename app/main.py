@@ -233,9 +233,24 @@ def listar_porteiros(db: Session = Depends(get_db), sessao: dict = Depends(exigi
 
 @app.post("/api/porteiros/")
 def criar_porteiro(dados: PorteiroCreate, db: Session = Depends(get_db), sessao: dict = Depends(exigir_admin)):
-    return db_crud.criar_porteiro(
-        db, dados.graduacao, dados.nome_guerra, dados.nome_completo, dados.login, dados.pin
+    # Chamamos o CRUD passando os dados. A lógica do ID vago fica lá dentro.
+    sucesso = db_crud.criar_porteiro(
+        db, 
+        dados.graduacao, 
+        dados.nome_guerra, 
+        dados.nome_completo, 
+        dados.login, 
+        dados.pin
     )
+    if not sucesso:
+        raise HTTPException(status_code=400, detail="Erro ao criar porteiro ou limite de IDs atingido.")
+    return {"message": "Porteiro cadastrado com sucesso!"}
+
+@app.get("/api/porteiros/publico")
+def listar_ids_publicos(db: Session = Depends(get_db)):
+    # Retorna apenas o necessário para a consulta na cancela
+    porteiros = db.query(Porteiro).filter(Porteiro.login != "admin").all()
+    return [{"numero_id": p.numero_id, "graduacao": p.graduacao, "nome_guerra": p.nome_guerra} for p in porteiros]
 
 @app.delete("/api/porteiros/{porteiro_id}")
 def deletar_porteiro(porteiro_id: int, db: Session = Depends(get_db), sessao: dict = Depends(exigir_admin)):

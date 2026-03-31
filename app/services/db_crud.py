@@ -11,6 +11,30 @@ def get_db():
     finally:
         db.close()
 
+def obter_proximo_numero_id_vago(db: Session):
+    # Busca todos os IDs em uso e transforma em lista de inteiros
+    ids_usados = [int(p.numero_id) for p in db.query(schemas.Porteiro.numero_id).all()]
+    
+    # Procura o primeiro número de 1 a 99 que não esteja na lista
+    for i in range(1, 100):
+        if i not in ids_usados:
+            return f"{i:02d}" # Retorna com zero à esquerda (ex: 01, 05, 12)
+    return None
+
+def get_porteiro_by_codigo(db: Session, codigo_completo: str):
+    """
+    Separa os 2 primeiros dígitos (ID) do restante (PIN)
+    e valida o militar correspondente.
+    """
+    if len(codigo_completo) < 6: # ID(2) + PIN(mínimo 4)
+        return None
+        
+    prefixo_id = codigo_completo[:2]
+    pin_tentativa = codigo_completo[2:]
+    
+    # Busca o porteiro pelo numero_id (o de 2 dígitos)
+    return db.query(schemas.Porteiro).filter(schemas.Porteiro.numero_id == prefixo_id).first(), pin_tentativa
+
 # ==========================================
 # 📦 ENCOMENDAS (Operação)
 # ==========================================
@@ -97,14 +121,23 @@ def get_porteiro_by_pin(db: Session, pin: str):
     # Retorna o porteiro que possui este PIN (usado na hora de dar entrada/baixa)
     return db.query(schemas.Porteiro).filter(schemas.Porteiro.pin_hash == pin).first()
 
-def criar_porteiro(db: Session, graduacao: str, nome_guerra: str, nome_completo: str, login: str, pin: str):
+def criar_porteiro(db: Session, graduacao, nome_guerra, nome_completo, login, pin):
+    # 1. Busca o próximo número disponível (01, 02, 03...)
+    novo_numero_id = obter_proximo_numero_id_vago(db)
+    
+    if not novo_numero_id:
+        return None # Caso chegue a 99 usuários (pouco provável)
+
+    # 2. Cria o objeto com o numero_id incluso
     novo_porteiro = schemas.Porteiro(
+        numero_id=novo_numero_id,
         graduacao=graduacao,
         nome_guerra=nome_guerra,
         nome_completo=nome_completo,
         login=login,
         pin_hash=hash_pin(pin)
     )
+    
     db.add(novo_porteiro)
     db.commit()
     db.refresh(novo_porteiro)

@@ -10,11 +10,12 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 class Porteiro(Base):
     __tablename__ = "porteiros"
     id = Column(Integer, primary_key=True, index=True)
-    graduacao = Column(String)      # Ex: Sd, Cb, Sgt
-    nome_guerra = Column(String)   # Ex: Silva
-    nome_completo = Column(String) # Nome civil completo
+    numero_id = Column(String(2), unique=True, index=True) # Ex: "01", "02"...
+    graduacao = Column(String)      
+    nome_guerra = Column(String)   
+    nome_completo = Column(String) 
     login = Column(String, unique=True, index=True)
-    pin_hash = Column(String)      # PIN armazenado com segurança
+    pin_hash = Column(String)
 
 class Encomenda(Base):
     __tablename__ = "encomendas"

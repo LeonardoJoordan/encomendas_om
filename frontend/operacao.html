@@ -149,6 +149,22 @@
         </div>
     </div>
 
+    <small><a href="#" onclick="abrirModalIDs()" style="color: #007bff; text-decoration: none;">🔍 Qual é o meu ID?</a></small>
+
+    <div id="modal-lista-ids" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:2000; justify-content:center; align-items:center;">
+        <div style="background:white; padding:20px; border-radius:8px; width:90%; max-width:400px; max-height: 80vh; overflow-y: auto;">
+            <h3>Lista de Identificação (ID)</h3>
+            <table style="width:100%; margin-bottom:15px;">
+                <thead>
+                    <tr><th>ID</th><th>Militar</th></tr>
+                </thead>
+                <tbody id="corpo-tabela-ids">
+                    </tbody>
+            </table>
+            <button onclick="document.getElementById('modal-lista-ids').style.display='none'" style="width:100%; background:#6c757d;">Fechar</button>
+        </div>
+    </div>
+
     <script src="/frontend/js/api.js"></script>
     <script src="/frontend/js/app.js"></script>
     <script>
