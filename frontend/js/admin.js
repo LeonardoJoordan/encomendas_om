@@ -54,7 +54,7 @@ async function carregarPorteiros() {
     porteiros.forEach(p => {
         const tr = document.createElement("tr");
         tr.innerHTML = `
-            <td>${p.id}</td>
+            <td style="font-weight: bold; color: #007bff;">${p.numero_id || p.id}</td>
             <td>${escapeHTML(p.graduacao)}</td>
             <td>${escapeHTML(p.nome_guerra)}</td>
             <td>${escapeHTML(p.nome_completo)}</td>
