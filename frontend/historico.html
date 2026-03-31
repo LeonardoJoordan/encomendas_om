@@ -131,6 +131,7 @@
         <button id="btn-filtrar" onclick="carregarHistorico()">🔍 Filtrar</button>
         <button id="btn-limpar" onclick="limparFiltros()">✖ Limpar</button>
         <button id="btn-imprimir" onclick="imprimirRelatorio()" style="margin-left: auto; background-color: #17a2b8; color: white; border: none; border-radius: 4px; padding: 8px 20px; cursor: pointer; font-weight: bold;">🖨️ Imprimir Relatório</button>
+        <button id="btn-exportar" onclick="exportarCSV()" style="background-color: #28a745; color: white; border: none; border-radius: 4px; padding: 8px 20px; cursor: pointer; font-weight: bold; margin-left: 10px;">📥 Exportar CSV</button>
     </section>
 
     <div id="cabecalho-impressao"></div>
@@ -178,6 +179,8 @@
                 if (!response.ok) throw new Error("Erro ao buscar histórico");
 
                 const dados = await response.json();
+                // Salva os dados em memória para a exportação CSV
+                window.dadosHistorico = dados;
                 tbody.innerHTML = "";
 
                 if (dados.length === 0) {
@@ -296,6 +299,56 @@
 
             // Aciona o painel de impressão do navegador
             window.print();
+        }
+
+        function exportarCSV() {
+            if (!window.dadosHistorico || window.dadosHistorico.length === 0) {
+                alert("Realize uma busca com resultados antes de exportar.");
+                return;
+            }
+
+            // O BOM (\uFEFF) força o Microsoft Excel a reconhecer o arquivo como UTF-8 e manter a acentuação correta
+            let csvContent = "\uFEFF";
+            
+            // Cabeçalho das colunas separados por ponto e vírgula (Padrão PT-BR do Excel)
+            csvContent += "Data Chegada;Destinatario;Descricao;Transportadora;Entregador;Status;Recebedor;Data Entrega;Porteiro Entrada;Militar Baixa;Observacoes\n";
+
+            window.dadosHistorico.forEach(enc => {
+                const dataChegada = enc.data_chegada ? new Date(enc.data_chegada).toLocaleString('pt-BR') : "";
+                const dataEntrega = enc.data_entrega ? new Date(enc.data_entrega).toLocaleString('pt-BR') : "";
+                
+                // Trata cada campo envolvendo em aspas duplas para evitar que um ';' ou quebra de linha no texto quebre as colunas da planilha
+                const linha = [
+                    dataChegada,
+                    enc.destinatario,
+                    enc.descricao,
+                    enc.empresa_transporte,
+                    enc.entregador,
+                    enc.status,
+                    enc.recebedor_nome,
+                    dataEntrega,
+                    `${enc.porteiro_graduacao} ${enc.porteiro_nome_guerra}`,
+                    enc.militar_entrega_grad ? `${enc.militar_entrega_grad} ${enc.militar_entrega_nome}` : "",
+                    enc.observacao_baixa
+                ].map(campo => {
+                    let valor = campo ? String(campo) : "";
+                    valor = valor.replace(/"/g, '""'); // Escapa aspas duplas internas
+                    return `"${valor}"`;
+                }).join(";");
+
+                csvContent += linha + "\n";
+            });
+
+            // Cria o arquivo virtual invisível no navegador e clica nele para forçar o download
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            
+            link.setAttribute("href", url);
+            link.setAttribute("download", "historico_movimentacao_cancela.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         }
     </script>
 </body>
