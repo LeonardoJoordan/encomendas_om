@@ -19,10 +19,10 @@ async function carregarEncomendas() {
             const tr = document.createElement('tr');
             const dataFormatada = new Date(enc.data_chegada).toLocaleString('pt-BR');
             tr.innerHTML = `
-                <td><strong>${enc.destinatario}</strong></td>
-                <td>${enc.descricao}</td>
-                <td>${enc.observacoes || '-'}</td>
-                <td>${enc.empresa_transporte || '-'}</td>
+                <td><strong>${escapeHTML(enc.destinatario)}</strong></td>
+                <td>${escapeHTML(enc.descricao)}</td>
+                <td>${escapeHTML(enc.observacoes || '-')}</td>
+                <td>${escapeHTML(enc.empresa_transporte || '-')}</td>
                 <td>${dataFormatada}</td>
             `;
             tbody.appendChild(tr);

@@ -1,7 +1,7 @@
 import os
 from typing import List, Optional
 
-from fastapi import FastAPI, Depends, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Depends, HTTPException, WebSocket, WebSocketDisconnect, Header
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
@@ -11,7 +11,38 @@ from app.services import db_crud
 from app.core.security import hash_pin
 from app.models.schemas import SessionLocal, Porteiro
 
+import secrets
+from app.core.config import ADMIN_LOGIN, ADMIN_PASSWORD
+# Gerenciador de Sessões em Memória (Volátil)
+# Armazena mapeamento: {"token_hex": {"role": "admin|cancela", "id": int, "nome": str}}
+SESSIONS = {}
+
 app = FastAPI(title="Sistema de Encomendas OM")
+
+# ==========================================
+# 🔐 DEPENDÊNCIAS DE AUTORIZAÇÃO (RBAC)
+# ==========================================
+
+def obter_sessao_atual(authorization: str = Header(None)):
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Token ausente ou inválido")
+    
+    token = authorization.split(" ")[1]
+    sessao = SESSIONS.get(token)
+    
+    if not sessao:
+        raise HTTPException(status_code=401, detail="Sessão expirada ou inválida")
+    return sessao
+
+def exigir_admin(sessao: dict = Depends(obter_sessao_atual)):
+    if sessao.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Acesso negado: Requer privilégios de administrador")
+    return sessao
+
+def exigir_cancela(sessao: dict = Depends(obter_sessao_atual)):
+    if sessao.get("role") not in ["cancela", "admin"]:
+        raise HTTPException(status_code=403, detail="Acesso negado: Requer acesso à cancela")
+    return sessao
 
 # ==========================================
 # 🧱 MODELOS PYDANTIC (Validação de Dados)
@@ -90,11 +121,11 @@ async def websocket_endpoint(websocket: WebSocket):
 # ==========================================
 
 @app.get("/api/encomendas/")
-def listar_encomendas(db: Session = Depends(get_db)):
+def listar_encomendas(db: Session = Depends(get_db), sessao: dict = Depends(exigir_cancela)):
     return db_crud.get_encomendas_ativas(db)
 
 @app.post("/api/encomendas/lote")
-async def registrar_lote_encomendas(lote: LoteEntrada, db: Session = Depends(get_db)):
+async def registrar_lote_encomendas(lote: LoteEntrada, db: Session = Depends(get_db), sessao: dict = Depends(exigir_cancela)):
     # 1. Valida quem está fazendo a operação
     porteiro = db_crud.get_porteiro_by_pin(db, hash_pin(lote.pin))
     if not porteiro:
@@ -112,7 +143,7 @@ async def registrar_lote_encomendas(lote: LoteEntrada, db: Session = Depends(get
 
 # ROTA DE ENTREGAR A ENCOMENDA (DAR BAIXA)
 @app.put("/api/encomendas/{encomenda_id}/baixa")
-async def dar_baixa_encomenda(encomenda_id: int, dados: BaixaEncomenda, db: Session = Depends(get_db)):
+async def dar_baixa_encomenda(encomenda_id: int, dados: BaixaEncomenda, db: Session = Depends(get_db), sessao: dict = Depends(exigir_cancela)):
     porteiro = db_crud.get_porteiro_by_pin(db, hash_pin(dados.pin))
     
     if not porteiro:
@@ -134,7 +165,7 @@ class CancelarEncomenda(BaseModel):
 
 # ROTA DE EXCLUIR/CANCELAR A ENCOMENDA
 @app.put("/api/encomendas/{encomenda_id}/cancelar")
-async def cancelar_encomenda(encomenda_id: int, dados: CancelarEncomenda, db: Session = Depends(get_db)):
+async def cancelar_encomenda(encomenda_id: int, dados: CancelarEncomenda, db: Session = Depends(get_db), sessao: dict = Depends(exigir_cancela)):
     # Converte o PIN digitado para hash antes de verificar no banco
     porteiro = db_crud.get_porteiro_by_pin(db, hash_pin(dados.pin))
     
@@ -156,7 +187,8 @@ def obter_historico(
     destinatario: Optional[str] = None,
     recebedor_nome: Optional[str] = None,
     porteiro_nome_guerra: Optional[str] = None,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    sessao: dict = Depends(exigir_cancela)
 ):
     return db_crud.get_historico_completo(
         db, data_inicio, data_fim, status, destinatario, recebedor_nome, porteiro_nome_guerra
@@ -168,19 +200,23 @@ class LoginRequest(BaseModel):
 
 @app.post("/api/login")
 def realizar_login(dados: LoginRequest, db: Session = Depends(get_db)):
-    if dados.login == "admin" and dados.senha == "admin123":
+    novo_token = secrets.token_hex(32) # Gera um hash aleatório de 64 caracteres
+    
+    if dados.login == ADMIN_LOGIN and dados.senha == ADMIN_PASSWORD:
+        SESSIONS[novo_token] = {"role": "admin", "id": 0, "nome": "Administrador"}
         return {
-            "token": "auth_admin_token_secreto", 
+            "token": novo_token, 
             "role": "admin", 
             "nome": "Administrador"
         }
 
-    # 2. Se não for admin, verifica se é um Porteiro/Cancela válido
+    # Verifica se é um Porteiro/Cancela válido
     porteiro = db.query(Porteiro).filter(Porteiro.login == dados.login).first()
     
     if porteiro and porteiro.pin_hash == hash_pin(dados.senha):
+        SESSIONS[novo_token] = {"role": "cancela", "id": porteiro.id, "nome": porteiro.nome_guerra}
         return {
-            "token": f"auth_cancela_{porteiro.id}", 
+            "token": novo_token, 
             "role": "cancela", 
             "nome": porteiro.nome_guerra
         }
@@ -192,24 +228,24 @@ def realizar_login(dados: LoginRequest, db: Session = Depends(get_db)):
 # ==========================================
 
 @app.get("/api/porteiros/")
-def listar_porteiros(db: Session = Depends(get_db)):
+def listar_porteiros(db: Session = Depends(get_db), sessao: dict = Depends(exigir_admin)):
     return db_crud.get_porteiros(db)
 
 @app.post("/api/porteiros/")
-def criar_porteiro(dados: PorteiroCreate, db: Session = Depends(get_db)):
+def criar_porteiro(dados: PorteiroCreate, db: Session = Depends(get_db), sessao: dict = Depends(exigir_admin)):
     return db_crud.criar_porteiro(
         db, dados.graduacao, dados.nome_guerra, dados.nome_completo, dados.login, dados.pin
     )
 
 @app.delete("/api/porteiros/{porteiro_id}")
-def deletar_porteiro(porteiro_id: int, db: Session = Depends(get_db)):
+def deletar_porteiro(porteiro_id: int, db: Session = Depends(get_db), sessao: dict = Depends(exigir_admin)):
     porteiro = db_crud.deletar_porteiro(db, porteiro_id)
     if not porteiro:
         raise HTTPException(status_code=404, detail="Porteiro não encontrado.")
     return {"message": "Porteiro removido com sucesso."}
 
 @app.put("/api/porteiros/{porteiro_id}")
-def atualizar_porteiro(porteiro_id: int, dados: PorteiroUpdate, db: Session = Depends(get_db)):
+def atualizar_porteiro(porteiro_id: int, dados: PorteiroUpdate, db: Session = Depends(get_db), sessao: dict = Depends(exigir_admin)):
     porteiro = db.query(Porteiro).filter(Porteiro.id == porteiro_id).first()
     if not porteiro:
         raise HTTPException(status_code=404, detail="Porteiro não encontrado.")

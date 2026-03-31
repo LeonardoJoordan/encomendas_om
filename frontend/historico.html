@@ -153,6 +153,7 @@
         </tbody>
     </table>
 
+    <script src="/frontend/js/api.js"></script>
     <script>
         async function carregarHistorico() {
             const dataInicio    = document.getElementById("filtro-data-inicio").value;
@@ -198,28 +199,28 @@
 
                     tr.innerHTML = `
                         <td>
-                            <strong>${enc.porteiro_graduacao} ${enc.porteiro_nome_guerra}</strong><br>
+                            <strong>${escapeHTML(enc.porteiro_graduacao)} ${escapeHTML(enc.porteiro_nome_guerra)}</strong><br>
                             <small>${dataChegada}</small>
                         </td>
                         <td>
-                            <strong>${enc.destinatario}</strong><br>
-                            <small>${enc.descricao}</small>
+                            <strong>${escapeHTML(enc.destinatario)}</strong><br>
+                            <small>${escapeHTML(enc.descricao)}</small>
                         </td>
                         <td>
-                            <strong>${enc.empresa_transporte}</strong><br>
-                            <small>${enc.entregador || "s/i"}</small>
+                            <strong>${escapeHTML(enc.empresa_transporte)}</strong><br>
+                            <small>${escapeHTML(enc.entregador || "s/i")}</small>
                         </td>
                         <td>
                             <span class="status-badge" style="background-color: ${enc.status === 'Entregue' ? '#28a745' : (enc.status === 'Cancelado' ? '#dc3545' : '#007bff')};">
-                                ${enc.status}
+                                ${escapeHTML(enc.status)}
                             </span>
                         </td>
                         <td>
-                            <strong>${enc.status === 'Cancelado' ? '<span style="color: #dc3545;">Registro Cancelado</span>' : (enc.recebedor_nome || "Aguardando...")}</strong><br>
-                            <small style="color: #666;"><em>${enc.status === 'Na Portaria' ? "" : 'Obs: ' + obsTexto}</em></small>
+                            <strong>${enc.status === 'Cancelado' ? '<span style="color: #dc3545;">Registro Cancelado</span>' : escapeHTML(enc.recebedor_nome || "Aguardando...")}</strong><br>
+                            <small style="color: #666;"><em>${enc.status === 'Na Portaria' ? "" : 'Obs: ' + escapeHTML(obsTexto)}</em></small>
                         </td>
                         <td>
-                            <strong>${militarEntregaInfo}</strong><br>
+                            <strong>${escapeHTML(militarEntregaInfo)}</strong><br>
                             <small>${enc.data_entrega ? dataEntrega : "-"}</small>
                         </td>
                     `;

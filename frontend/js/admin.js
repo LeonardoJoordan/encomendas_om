@@ -55,13 +55,13 @@ async function carregarPorteiros() {
         const tr = document.createElement("tr");
         tr.innerHTML = `
             <td>${p.id}</td>
-            <td>${p.graduacao}</td>
-            <td>${p.nome_guerra}</td>
-            <td>${p.nome_completo}</td>
-            <td>${p.login}</td>
+            <td>${escapeHTML(p.graduacao)}</td>
+            <td>${escapeHTML(p.nome_guerra)}</td>
+            <td>${escapeHTML(p.nome_completo)}</td>
+            <td>${escapeHTML(p.login)}</td>
             <td>****</td> 
             <td>
-                <button style="background-color: #ffc107; color: #000; border: none; padding: 5px 10px; cursor: pointer; margin-right: 5px;" onclick="prepararEdicao(${p.id}, '${p.graduacao}', '${p.nome_guerra}', '${p.nome_completo}', '${p.login}')">Editar</button>
+                <button style="background-color: #ffc107; color: #000; border: none; padding: 5px 10px; cursor: pointer; margin-right: 5px;" onclick="prepararEdicao(${p.id}, '${escapeHTML(p.graduacao)}', '${escapeHTML(p.nome_guerra)}', '${escapeHTML(p.nome_completo)}', '${escapeHTML(p.login)}')">Editar</button>
                 <button style="background-color: #dc3545;" onclick="deletarPorteiro(${p.id})">Excluir</button>
             </td>
         `;

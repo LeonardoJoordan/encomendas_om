@@ -43,11 +43,11 @@ async function carregarListaBaixa() {
         tr.innerHTML = `
             <td>${enc.id}</td>
             <td>${dataFormatada}</td>            
-            <td><strong>${enc.destinatario}</strong></td>
-            <td>${enc.descricao}</td>
-            <td>${enc.observacoes || '-'}</td>
-            <td>${enc.empresa_transporte || '-'}</td>
-            <td>${enc.porteiro_graduacao} ${enc.porteiro_nome_guerra}</td>
+            <td><strong>${escapeHTML(enc.destinatario)}</strong></td>
+            <td>${escapeHTML(enc.descricao)}</td>
+            <td>${escapeHTML(enc.observacoes || '-')}</td>
+            <td>${escapeHTML(enc.empresa_transporte || '-')}</td>
+            <td>${escapeHTML(enc.porteiro_graduacao)} ${escapeHTML(enc.porteiro_nome_guerra)}</td>
             <td>
                 <button style="background-color: #007bff; color: white; border: none; padding: 5px 10px; cursor: pointer; border-radius: 4px; margin-right: 5px;" onclick="abrirModalBaixa(${enc.id})">Entregar</button>
                 <button style="background-color: #dc3545; color: white; border: none; padding: 5px 10px; cursor: pointer; border-radius: 4px;" onclick="abrirModalCancelar(${enc.id})" title="Excluir Registro">✖</button>
