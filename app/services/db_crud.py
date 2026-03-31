@@ -27,7 +27,7 @@ def get_porteiro_by_codigo(db: Session, codigo_completo: str):
     e valida o militar correspondente.
     """
     if len(codigo_completo) < 6: # ID(2) + PIN(mínimo 4)
-        return None
+        return None, None
         
     prefixo_id = codigo_completo[:2]
     pin_tentativa = codigo_completo[2:]

@@ -126,10 +126,14 @@ def listar_encomendas(db: Session = Depends(get_db), sessao: dict = Depends(exig
 
 @app.post("/api/encomendas/lote")
 async def registrar_lote_encomendas(lote: LoteEntrada, db: Session = Depends(get_db), sessao: dict = Depends(exigir_cancela)):
-    # 1. Valida quem está fazendo a operação
-    porteiro = db_crud.get_porteiro_by_pin(db, hash_pin(lote.pin))
-    if not porteiro:
-        raise HTTPException(status_code=403, detail="PIN da Cancela inválido.")
+    # Nova lógica do Prefixo + PIN
+    resultado = db_crud.get_porteiro_by_codigo(db, lote.pin) 
+    if not resultado or resultado[0] is None:
+        raise HTTPException(status_code=403, detail="Formato de PIN inválido. Use: ID + PIN.")
+    
+    porteiro, pin_tentativa = resultado
+    if porteiro.pin_hash != hash_pin(pin_tentativa):
+        raise HTTPException(status_code=403, detail="ID do Porteiro ou PIN inválidos.")
     
     # 2. Converte os dados validados pelo Pydantic para dicionários
     lista_dados = [item.dict() for item in lote.encomendas]
@@ -146,8 +150,14 @@ async def registrar_lote_encomendas(lote: LoteEntrada, db: Session = Depends(get
 async def dar_baixa_encomenda(encomenda_id: int, dados: BaixaEncomenda, db: Session = Depends(get_db), sessao: dict = Depends(exigir_cancela)):
     porteiro = db_crud.get_porteiro_by_pin(db, hash_pin(dados.pin))
     
-    if not porteiro:
-        raise HTTPException(status_code=403, detail="PIN da Cancela inválido.")
+    # Nova lógica do Prefixo + PIN
+    resultado = db_crud.get_porteiro_by_codigo(db, dados.pin) 
+    if not resultado or resultado[0] is None:
+        raise HTTPException(status_code=403, detail="Formato de PIN inválido. Use: ID + PIN.")
+    
+    porteiro, pin_tentativa = resultado
+    if porteiro.pin_hash != hash_pin(pin_tentativa):
+        raise HTTPException(status_code=403, detail="ID do Porteiro ou PIN inválidos.")
         
     encomenda = db_crud.dar_baixa_encomenda(db, encomenda_id, porteiro.id, dados.recebedor_nome, dados.observacao_baixa)
     if not encomenda:
@@ -166,11 +176,14 @@ class CancelarEncomenda(BaseModel):
 # ROTA DE EXCLUIR/CANCELAR A ENCOMENDA
 @app.put("/api/encomendas/{encomenda_id}/cancelar")
 async def cancelar_encomenda(encomenda_id: int, dados: CancelarEncomenda, db: Session = Depends(get_db), sessao: dict = Depends(exigir_cancela)):
-    # Converte o PIN digitado para hash antes de verificar no banco
-    porteiro = db_crud.get_porteiro_by_pin(db, hash_pin(dados.pin))
+    # Nova lógica do Prefixo + PIN
+    resultado = db_crud.get_porteiro_by_codigo(db, dados.pin) 
+    if not resultado or resultado[0] is None:
+        raise HTTPException(status_code=403, detail="Formato de PIN inválido. Use: ID + PIN.")
     
-    if not porteiro:
-        raise HTTPException(status_code=401, detail="PIN inválido")
+    porteiro, pin_tentativa = resultado
+    if porteiro.pin_hash != hash_pin(pin_tentativa):
+        raise HTTPException(status_code=403, detail="ID do Porteiro ou PIN inválidos.")
     
     encomenda = db_crud.cancelar_encomenda(db, encomenda_id, porteiro.id, dados.motivo)
     if not encomenda:
