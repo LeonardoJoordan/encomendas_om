@@ -1,8 +1,22 @@
 from sqlalchemy.orm import Session
 from app.models import schemas
 from app.core.security import hash_pin
-from datetime import datetime
+from app.models.schemas import agora_br
 from sqlalchemy.orm import aliased
+
+def criar_admin_padrao(db: Session):
+    admin_existente = db.query(schemas.Porteiro).filter(schemas.Porteiro.login == "admin").first()
+    if not admin_existente:
+        admin_novo = schemas.Porteiro(
+            numero_id="00",
+            graduacao="Admin",
+            nome_guerra="Sistema",
+            nome_completo="Administrador do Sistema",
+            login="admin",
+            pin_hash=hash_pin("admin123")
+        )
+        db.add(admin_novo)
+        db.commit()
 
 def get_db():
     db = schemas.SessionLocal()
@@ -96,7 +110,7 @@ def dar_baixa_encomenda(db: Session, encomenda_id: int, porteiro_id: int, recebe
     encomenda = db.query(schemas.Encomenda).filter(schemas.Encomenda.id == encomenda_id).first()
     if encomenda and encomenda.status == "Na Portaria":
         encomenda.status = "Entregue"
-        encomenda.data_entrega = datetime.now()
+        encomenda.data_entrega = agora_br()
         encomenda.recebedor_nome = recebedor_nome
         encomenda.observacao_baixa = observacao_baixa
         

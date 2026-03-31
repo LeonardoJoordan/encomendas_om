@@ -100,6 +100,48 @@ window.prepararEdicao = function(id, graduacao, nome_guerra, nome_completo, logi
     document.getElementById("btn-cancelar").style.display = "inline-block";
 };
 
+// --- Lógica do Modal de Troca de Senha Admin ---
+window.abrirModalSenhaAdmin = function() {
+    document.getElementById("admin-senha-atual").value = "";
+    document.getElementById("admin-nova-senha").value = "";
+    document.getElementById("admin-confirma-senha").value = "";
+    document.getElementById("modal-senha-admin").style.display = "block";
+};
+
+window.fecharModalSenhaAdmin = function() {
+    document.getElementById("modal-senha-admin").style.display = "none";
+};
+
+window.salvarSenhaAdmin = async function() {
+    const senhaAtual = document.getElementById("admin-senha-atual").value;
+    const novaSenha = document.getElementById("admin-nova-senha").value;
+    const confirmaSenha = document.getElementById("admin-confirma-senha").value;
+
+    if (!senhaAtual || !novaSenha || !confirmaSenha) {
+        alert("Preencha todos os campos.");
+        return;
+    }
+
+    if (novaSenha !== confirmaSenha) {
+        alert("A nova senha e a confirmação não coincidem.");
+        return;
+    }
+
+    const response = await fetch("/api/admin/senha", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ senha_atual: senhaAtual, nova_senha: novaSenha })
+    });
+
+    if (response.ok) {
+        alert("Senha alterada com sucesso! Você será desconectado para logar novamente.");
+        fazerLogout();
+    } else {
+        const error = await response.json();
+        alert("Erro: " + (error.detail || "Falha ao alterar senha."));
+    }
+};
+
 window.cancelarEdicao = function() {
     document.getElementById("form-admin").reset();
     document.getElementById("porteiro-id").value = "";

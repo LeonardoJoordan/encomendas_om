@@ -1,11 +1,15 @@
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from app.core.config import DATABASE_URL
 
+BR_TZ = timezone(timedelta(hours=-3))
 Base = declarative_base()
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+def agora_br():
+    return datetime.now(BR_TZ)
 
 class Porteiro(Base):
     __tablename__ = "porteiros"
@@ -25,7 +29,7 @@ class Encomenda(Base):
     observacoes = Column(String, nullable=True)
     empresa_transporte = Column(String)
     entregador = Column(String, nullable=True)
-    data_chegada = Column(DateTime, default=datetime.now)
+    data_chegada = Column(DateTime, default=agora_br)
     data_entrega = Column(DateTime, nullable=True)
     status = Column(String, default="Na Portaria")
     recebedor_nome = Column(String, nullable=True)
@@ -37,7 +41,7 @@ class LogOperacao(Base):
     encomenda_id = Column(Integer, ForeignKey("encomendas.id"))
     porteiro_id = Column(Integer, ForeignKey("porteiros.id"))
     acao = Column(String) # "ENTRADA" ou "BAIXA"
-    data_hora = Column(DateTime, default=datetime.now)
+    data_hora = Column(DateTime, default=agora_br)
 
 # Cria o arquivo SQLite e as tabelas automaticamente na inicialização
 Base.metadata.create_all(bind=engine)

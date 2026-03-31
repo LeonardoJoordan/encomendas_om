@@ -4,6 +4,7 @@ from typing import List, Optional
 from fastapi import FastAPI, Depends, HTTPException, WebSocket, WebSocketDisconnect, Header
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
+from contextlib import asynccontextmanager
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -12,12 +13,23 @@ from app.core.security import hash_pin
 from app.models.schemas import SessionLocal, Porteiro
 
 import secrets
-from app.core.config import ADMIN_LOGIN, ADMIN_PASSWORD
+
 # Gerenciador de Sessões em Memória (Volátil)
 # Armazena mapeamento: {"token_hex": {"role": "admin|cancela", "id": int, "nome": str}}
 SESSIONS = {}
 
-app = FastAPI(title="Sistema de Encomendas OM")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Executa no Startup
+    db = SessionLocal()
+    try:
+        db_crud.criar_admin_padrao(db)
+    finally:
+        db.close()
+    yield
+    # Código após o yield executaria no Shutdown (se necessário no futuro)
+
+app = FastAPI(title="Sistema de Encomendas OM", lifespan=lifespan)
 
 # ==========================================
 # 🔐 DEPENDÊNCIAS DE AUTORIZAÇÃO (RBAC)
@@ -209,27 +221,27 @@ class LoginRequest(BaseModel):
     login: str
     senha: str
 
+class TrocaSenhaAdmin(BaseModel):
+    senha_atual: str
+    nova_senha: str
+
 @app.post("/api/login")
 def realizar_login(dados: LoginRequest, db: Session = Depends(get_db)):
-    novo_token = secrets.token_hex(32) # Gera um hash aleatório de 64 caracteres
+    novo_token = secrets.token_hex(32)
     
-    if dados.login == ADMIN_LOGIN and dados.senha == ADMIN_PASSWORD:
-        SESSIONS[novo_token] = {"role": "admin", "id": 0, "nome": "Administrador"}
+    # Busca qualquer usuário no banco (Admin ou Porteiro) pelo login
+    usuario = db.query(Porteiro).filter(Porteiro.login == dados.login).first()
+    
+    if usuario and usuario.pin_hash == hash_pin(dados.senha):
+        # Define a role baseada no login
+        role = "admin" if usuario.login == "admin" else "cancela"
+        nome_exibicao = "Administrador" if role == "admin" else usuario.nome_guerra
+        
+        SESSIONS[novo_token] = {"role": role, "id": usuario.id, "nome": nome_exibicao}
         return {
             "token": novo_token, 
-            "role": "admin", 
-            "nome": "Administrador"
-        }
-
-    # Verifica se é um Porteiro/Cancela válido
-    porteiro = db.query(Porteiro).filter(Porteiro.login == dados.login).first()
-    
-    if porteiro and porteiro.pin_hash == hash_pin(dados.senha):
-        SESSIONS[novo_token] = {"role": "cancela", "id": porteiro.id, "nome": porteiro.nome_guerra}
-        return {
-            "token": novo_token, 
-            "role": "cancela", 
-            "nome": porteiro.nome_guerra
+            "role": role, 
+            "nome": nome_exibicao
         }
 
     raise HTTPException(status_code=401, detail="Usuário ou senha inválidos")
@@ -241,6 +253,17 @@ def realizar_login(dados: LoginRequest, db: Session = Depends(get_db)):
 @app.get("/api/porteiros/")
 def listar_porteiros(db: Session = Depends(get_db), sessao: dict = Depends(exigir_admin)):
     return db_crud.get_porteiros(db)
+
+@app.put("/api/admin/senha")
+def alterar_senha_admin(dados: TrocaSenhaAdmin, db: Session = Depends(get_db), sessao: dict = Depends(exigir_admin)):
+    admin = db.query(Porteiro).filter(Porteiro.login == "admin").first()
+    
+    if not admin or admin.pin_hash != hash_pin(dados.senha_atual):
+        raise HTTPException(status_code=400, detail="Senha atual incorreta.")
+    
+    admin.pin_hash = hash_pin(dados.nova_senha)
+    db.commit()
+    return {"message": "Senha do administrador alterada com sucesso."}
 
 @app.post("/api/porteiros/")
 def criar_porteiro(dados: PorteiroCreate, db: Session = Depends(get_db), sessao: dict = Depends(exigir_admin)):
