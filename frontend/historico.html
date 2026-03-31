@@ -154,16 +154,32 @@
         </tbody>
     </table>
 
+    <div id="controles-paginacao" style="display: none; justify-content: center; align-items: center; gap: 15px; margin-top: 20px; padding-bottom: 20px;">
+        <button id="btn-ant" onclick="mudarPagina(-1)" style="padding: 8px 15px; background-color: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">⬅ Anterior</button>
+        <span id="info-paginacao" style="font-weight: bold; color: #555;">Página 1</span>
+        <button id="btn-prox" onclick="mudarPagina(1)" style="padding: 8px 15px; background-color: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">Próxima ➡</button>
+    </div>
+
     <script src="/frontend/js/api.js"></script>
     <script>
-        async function carregarHistorico() {
+        let paginaAtual = 1;
+        const limitePorPagina = 100;
+        let totalRegistros = 0;
+
+        async function carregarHistorico(resetarPagina = true) {
+            if (resetarPagina) {
+                paginaAtual = 1;
+            }
+
+            const skip = (paginaAtual - 1) * limitePorPagina;
+
             const dataInicio    = document.getElementById("filtro-data-inicio").value;
             const dataFim       = document.getElementById("filtro-data-fim").value;
             const destinatario  = document.getElementById("filtro-destinatario").value.trim();
             const recebedor     = document.getElementById("filtro-recebedor").value.trim();
             const porteiro      = document.getElementById("filtro-porteiro").value.trim();
 
-            let url = `/api/historico?`;
+            let url = `/api/historico?skip=${skip}&limit=${limitePorPagina}&`;
             if (dataInicio)     url += `data_inicio=${dataInicio}&`;
             if (dataFim)        url += `data_fim=${dataFim}&`;
             if (destinatario)   url += `destinatario=${encodeURIComponent(destinatario)}&`;
@@ -172,24 +188,31 @@
 
             const tbody = document.getElementById("lista-historico");
             const info  = document.getElementById("info-resultados");
-            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#999;">Buscando...</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#999;">Buscando...</td></tr>`;
 
             try {
                 const response = await fetch(url);
                 if (!response.ok) throw new Error("Erro ao buscar histórico");
 
-                const dados = await response.json();
-                // Salva os dados em memória para a exportação CSV
+                const respostaJson = await response.json();
+                totalRegistros = respostaJson.total;
+                const dados = respostaJson.dados;
+                
+                // Salva apenas a página atual em memória para a impressão
                 window.dadosHistorico = dados;
                 tbody.innerHTML = "";
+                
+                atualizarBotoesPaginacao();
 
                 if (dados.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#999;">Nenhum resultado encontrado.</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#999;">Nenhum resultado encontrado.</td></tr>`;
                     info.textContent = "";
                     return;
                 }
 
-                info.textContent = `${dados.length} registro(s) encontrado(s).`;
+                const inicioExibicao = skip + 1;
+                const fimExibicao = Math.min(skip + limitePorPagina, totalRegistros);
+                info.textContent = `Mostrando ${inicioExibicao} a ${fimExibicao} de ${totalRegistros} registro(s).`;
 
                 dados.forEach(enc => {
                     const tr = document.createElement("tr");
@@ -232,8 +255,36 @@
 
             } catch (error) {
                 console.error("Erro:", error);
-                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:red;">Erro ao carregar histórico.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:red;">Erro ao carregar histórico.</td></tr>`;
             }
+        }
+
+        function atualizarBotoesPaginacao() {
+            const divControles = document.getElementById("controles-paginacao");
+            const btnAnt = document.getElementById("btn-ant");
+            const btnProx = document.getElementById("btn-prox");
+            const infoPag = document.getElementById("info-paginacao");
+
+            if (totalRegistros > 0) {
+                divControles.style.display = "flex";
+                const totalPaginas = Math.ceil(totalRegistros / limitePorPagina);
+                infoPag.textContent = `Página ${paginaAtual} de ${totalPaginas}`;
+
+                btnAnt.disabled = paginaAtual === 1;
+                btnAnt.style.opacity = paginaAtual === 1 ? "0.5" : "1";
+                btnAnt.style.cursor = paginaAtual === 1 ? "not-allowed" : "pointer";
+
+                btnProx.disabled = paginaAtual === totalPaginas;
+                btnProx.style.opacity = paginaAtual === totalPaginas ? "0.5" : "1";
+                btnProx.style.cursor = paginaAtual === totalPaginas ? "not-allowed" : "pointer";
+            } else {
+                divControles.style.display = "none";
+            }
+        }
+
+        function mudarPagina(direcao) {
+            paginaAtual += direcao;
+            carregarHistorico(false); // false = mantém os filtros, altera apenas o Offset
         }
 
         function limparFiltros() {
@@ -244,7 +295,8 @@
             document.getElementById("filtro-porteiro").value = "";
             document.getElementById("info-resultados").textContent = "";
             document.getElementById("lista-historico").innerHTML = 
-                `<tr><td colspan="5" style="text-align:center; color:#999;">Use os filtros acima para buscar.</td></tr>`;
+                `<tr><td colspan="6" style="text-align:center; color:#999;">Use os filtros acima para buscar.</td></tr>`;
+            document.getElementById("controles-paginacao").style.display = "none";
         }
 
         function imprimirRelatorio() {
@@ -301,19 +353,44 @@
             window.print();
         }
 
-        function exportarCSV() {
-            if (!window.dadosHistorico || window.dadosHistorico.length === 0) {
+        async function exportarCSV() {
+            if (totalRegistros === 0) {
                 alert("Realize uma busca com resultados antes de exportar.");
                 return;
             }
 
-            // O BOM (\uFEFF) força o Microsoft Excel a reconhecer o arquivo como UTF-8 e manter a acentuação correta
-            let csvContent = "\uFEFF";
-            
-            // Cabeçalho das colunas separados por ponto e vírgula (Padrão PT-BR do Excel)
-            csvContent += "Data Chegada;Destinatario;Descricao;Transportadora;Entregador;Status;Recebedor;Data Entrega;Porteiro Entrada;Militar Baixa;Observacoes\n";
+            const btnExportar = document.getElementById("btn-exportar");
+            btnExportar.textContent = "⏳ Gerando...";
+            btnExportar.disabled = true;
 
-            window.dadosHistorico.forEach(enc => {
+            try {
+                // Monta a URL ignorando paginação (limit=0) para puxar todos os registros de uma vez
+                const dataInicio    = document.getElementById("filtro-data-inicio").value;
+                const dataFim       = document.getElementById("filtro-data-fim").value;
+                const destinatario  = document.getElementById("filtro-destinatario").value.trim();
+                const recebedor     = document.getElementById("filtro-recebedor").value.trim();
+                const porteiro      = document.getElementById("filtro-porteiro").value.trim();
+
+                let url = `/api/historico?skip=0&limit=0&`;
+                if (dataInicio)     url += `data_inicio=${dataInicio}&`;
+                if (dataFim)        url += `data_fim=${dataFim}&`;
+                if (destinatario)   url += `destinatario=${encodeURIComponent(destinatario)}&`;
+                if (recebedor)      url += `recebedor_nome=${encodeURIComponent(recebedor)}&`;
+                if (porteiro)       url += `porteiro_nome_guerra=${encodeURIComponent(porteiro)}&`;
+
+                const response = await fetch(url);
+                if (!response.ok) throw new Error("Falha na extração de dados");
+                
+                const respostaJson = await response.json();
+                const dadosCompletos = respostaJson.dados;
+
+                // O BOM (\uFEFF) força o Microsoft Excel a reconhecer o arquivo como UTF-8 e manter a acentuação correta
+                let csvContent = "\uFEFF";
+                
+                // Cabeçalho das colunas separados por ponto e vírgula (Padrão PT-BR do Excel)
+                csvContent += "Data Chegada;Destinatario;Descricao;Transportadora;Entregador;Status;Recebedor;Data Entrega;Porteiro Entrada;Militar Baixa;Observacoes\n";
+
+                dadosCompletos.forEach(enc => {
                 const dataChegada = enc.data_chegada ? new Date(enc.data_chegada).toLocaleString('pt-BR') : "";
                 const dataEntrega = enc.data_entrega ? new Date(enc.data_entrega).toLocaleString('pt-BR') : "";
                 
@@ -349,6 +426,15 @@
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
+
+            btnExportar.textContent = "📥 Exportar CSV";
+            btnExportar.disabled = false;
+            
+            } catch (error) {
+                alert("Erro ao exportar arquivo: " + error.message);
+                btnExportar.textContent = "📥 Exportar CSV";
+                btnExportar.disabled = false;
+            }
         }
     </script>
 </body>

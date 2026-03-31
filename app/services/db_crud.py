@@ -164,7 +164,7 @@ def deletar_porteiro(db: Session, porteiro_id: int):
         db.commit()
     return porteiro
 
-def get_historico_completo(db: Session, data_inicio=None, data_fim=None, status=None, destinatario=None, recebedor_nome=None, porteiro_nome_guerra=None):
+def get_historico_completo(db: Session, data_inicio=None, data_fim=None, status=None, destinatario=None, recebedor_nome=None, porteiro_nome_guerra=None, skip: int = 0, limit: int = 100):
     # Aliases para diferenciar o porteiro da ENTRADA do porteiro da BAIXA/CANCELAMENTO
     P_Entrada = aliased(schemas.Porteiro)
     P_Baixa = aliased(schemas.Porteiro)
@@ -200,7 +200,16 @@ def get_historico_completo(db: Session, data_inicio=None, data_fim=None, status=
     if recebedor_nome:
         query = query.filter(schemas.Encomenda.recebedor_nome.ilike(f"%{recebedor_nome}%"))
 
-    resultados = query.order_by(schemas.Encomenda.data_chegada.desc()).all()
+    query = query.order_by(schemas.Encomenda.data_chegada.desc())
+    
+    # Conta o total de registros ANTES de fatiar (essencial para a interface saber quantas páginas existem)
+    total = query.count()
+    
+    # Se limit for maior que 0, aplica a paginação. Se for 0, ignora e traz tudo (para o CSV)
+    if limit > 0:
+        query = query.offset(skip).limit(limit)
+        
+    resultados = query.all()
 
     historico_formatado = []
     for enc, ent_grad, ent_nome, b_grad, b_nome in resultados:
@@ -212,7 +221,7 @@ def get_historico_completo(db: Session, data_inicio=None, data_fim=None, status=
         enc_dict['militar_entrega_nome'] = b_nome or ""
         historico_formatado.append(enc_dict)
 
-    return historico_formatado
+    return {"total": total, "dados": historico_formatado}
 
 def cancelar_encomenda(db: Session, encomenda_id: int, porteiro_id: int, motivo: str):
     encomenda = db.query(schemas.Encomenda).filter(schemas.Encomenda.id == encomenda_id).first()

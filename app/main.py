@@ -210,11 +210,13 @@ def obter_historico(
     destinatario: Optional[str] = None,
     recebedor_nome: Optional[str] = None,
     porteiro_nome_guerra: Optional[str] = None,
+    skip: int = 0,
+    limit: int = 100,
     db: Session = Depends(get_db),
     sessao: dict = Depends(exigir_cancela)
 ):
     return db_crud.get_historico_completo(
-        db, data_inicio, data_fim, status, destinatario, recebedor_nome, porteiro_nome_guerra
+        db, data_inicio, data_fim, status, destinatario, recebedor_nome, porteiro_nome_guerra, skip, limit
     )
 
 class LoginRequest(BaseModel):
