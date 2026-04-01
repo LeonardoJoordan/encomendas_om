@@ -203,6 +203,44 @@
             sessionStorage.removeItem('userName');
             window.location.href = '/';
         }
+
+        // ==========================================
+        // MELHORIAS DE UX - MODAL DE BAIXA
+        // ==========================================
+        document.addEventListener('DOMContentLoaded', () => {
+            const modalBaixa = document.getElementById('modal-pin');
+            const btnConfirmar = document.getElementById('btn-confirmar-baixa');
+            
+            // 1. Acionar botão confirmar com a tecla Enter
+            modalBaixa.addEventListener('keypress', function(event) {
+                if (event.key === 'Enter') {
+                    event.preventDefault(); // Evita que o Enter recarregue a página
+                    btnConfirmar.click();   // Simula o clique no botão verde
+                }
+            });
+
+            // 2. Limpar campos e focar no primeiro input ao abrir o modal
+            const observer = new MutationObserver((mutations) => {
+                mutations.forEach((mutation) => {
+                    if (mutation.attributeName === 'style') {
+                        // Se o modal deixou de ser 'none' (ou seja, ficou visível)
+                        if (modalBaixa.style.display !== 'none') {
+                            document.getElementById('recebedor-nome').value = '';
+                            document.getElementById('obs-baixa').value = '';
+                            document.getElementById('pin-baixa').value = '';
+                            
+                            // Pequeno delay para garantir que o modal já renderizou antes de puxar o foco
+                            setTimeout(() => {
+                                document.getElementById('recebedor-nome').focus();
+                            }, 100);
+                        }
+                    }
+                });
+            });
+            
+            // Ativa o observador para vigiar as mudanças de estilo (display) do modal
+            observer.observe(modalBaixa, { attributes: true });
+        });
     </script>
 </body>
 </html>

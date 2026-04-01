@@ -6,6 +6,10 @@ import sys
 import webbrowser
 import time
 import socket
+import os
+from PIL import Image
+import pystray
+from pystray import MenuItem as item
 
 def worker_servidor():
     """Roda o Uvicorn de forma nativa no processo filho, sem depender do terminal."""
@@ -33,6 +37,7 @@ class EncomendasLauncher:
         self.root.eval('tk::PlaceWindow . center')
 
         self.processo_servidor = None
+        self.tray_icon = None  # Evita crash ao tentar fechar o programa
 
         # Elementos da Interface
         self.lbl_titulo = tk.Label(root, text="Gestor do Servidor", font=("Arial", 14, "bold"))
@@ -91,6 +96,44 @@ class EncomendasLauncher:
         self.lbl_ip.config(text="")
 
     def fechar_aplicativo(self):
+        if self.processo_servidor is not None:
+            # Se o servidor estiver rodando, minimiza para a bandeja
+            self.root.withdraw()
+            self.criar_icone_bandeja()
+        else:
+            # Se o servidor estiver desligado, fecha tudo
+            self.encerrar_programa_realmente()
+
+    def criar_icone_bandeja(self):
+        import sys
+        # Como launcher.py e icone.png estão na mesma pasta (raiz), basta pegar o diretório atual
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        
+        # Mudamos para .ico
+        caminho_icone = os.path.join(base_dir, "icone.ico")
+        
+        # Abre a imagem multi-resolução
+        image = Image.open(caminho_icone)
+        
+        # Cria o menu de contexto
+        menu = pystray.Menu(
+            item('Abrir Painel', self.restaurar_janela, default=True),
+            item('Desligar e Sair', self.encerrar_programa_realmente)
+        )
+        
+        # Inicia o ícone na bandeja
+        # MUDANÇA CRÍTICA: Alteramos o primeiro parâmetro ("Encomendas_V2") para quebrar o cache do Linux/Windows
+        self.tray_icon = pystray.Icon("Encomendas_V2", image, "Servidor Encomendas", menu)
+        self.tray_icon.run()
+
+    def restaurar_janela(self, icon=None, item=None):
+        if self.tray_icon:
+            self.tray_icon.stop()
+        self.root.after(0, self.root.deiconify) # Traz a janela de volta
+
+    def encerrar_programa_realmente(self, icon=None, item=None):
+        if self.tray_icon:
+            self.tray_icon.stop()
         self.desligar_servidor()
         self.root.destroy()
 

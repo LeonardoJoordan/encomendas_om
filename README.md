@@ -10,6 +10,8 @@ Sistema de gerenciamento de encomendas para portarias, projetado com arquitetura
 * **Backend:** FastAPI, Uvicorn, Python 3.
 * **Banco de Dados:** SQLite (via SQLAlchemy).
 * **Frontend:** HTML5, CSS3, Vanilla JS.
+* **Interface do Servidor (Launcher):** Tkinter, Pystray, Pillow (System Tray).
+* **Infraestrutura:** Cron (Linux) para automação de rotinas satélites.
 * **Compilação:** Nuitka (gera executável binário independente).
 
 ## 🚀 Como Executar em Desenvolvimento
@@ -70,9 +72,9 @@ Sistema robusto de gerenciamento de encomendas para portarias e recepções, pro
    ```bash
    pip install -r requirements.txt
    ```
-3. Inicie o servidor:
+3. Inicie a interface gráfica do servidor (Launcher):
    ```bash
-   uvicorn app.main:app --host 0.0.0.0 --port 8000
+   python launcher.py
    ```
 
 ### 🔗 Acessos do Sistema

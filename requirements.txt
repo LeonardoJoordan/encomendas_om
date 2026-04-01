@@ -4,3 +4,5 @@ sqlalchemy
 websockets
 nuitka
 zstandard
+pystray
+Pillow
