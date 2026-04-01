@@ -133,7 +133,7 @@ async def websocket_endpoint(websocket: WebSocket):
 # ==========================================
 
 @app.get("/api/encomendas/")
-def listar_encomendas(db: Session = Depends(get_db), sessao: dict = Depends(exigir_cancela)):
+def listar_encomendas(db: Session = Depends(get_db)):
     return db_crud.get_encomendas_ativas(db)
 
 @app.post("/api/encomendas/lote")

@@ -66,22 +66,34 @@
                 <h2>📦 Registrar Entrada</h2>
                 <form id="form-entrada">
                     <div id="container-encomendas">
-                        <div class="linha-encomenda">
-                            <input type="text" class="destinatario" placeholder="Destinatário" required>
-                            <input type="text" class="descricao" placeholder="Descrição do pacote" required>
-                            <input type="text" class="observacoes" placeholder="Observações do pacote">
-                            <select class="empresa-transporte" required>
-                                <option value="">Empresa...</option>
-                                <option value="Correios">Correios</option>
-                                <option value="Mercado Livre">Mercado Livre</option>
-                                <option value="Shopee">Shopee</option>
-                                <option value="Moto Entrega">Moto Entrega Local</option>
-                                <option value="Outros">Outros</option>
-                            </select>
-                            <input type="text" class="entregador" placeholder="Nome entregador" required>
-                            <button type="button" class="btn-remover" onclick="this.parentElement.remove()">❌</button>
                         </div>
-                    </div>
+                        <datalist id="lista-transportadoras">
+                            <option value="Correios">
+                            <option value="Mercado Livre">
+                            <option value="Amazon">
+                            <option value="Loggi">
+                            <option value="Jadlog">
+                            <option value="Total Express">
+                            <option value="Shopee">
+                            <option value="Moto Entrega / Office Boy">
+                        </datalist>
+
+                        <datalist id="lista-descricoes">
+                            <option value="Caixa pequena">
+                            <option value="Caixa média">
+                            <option value="Caixa grande">
+                            <option value="Emb. tipo e-commerce">
+                            <option value="Envelope de papel">
+                            <option value="Malote">
+                        </datalist>
+
+                        <datalist id="lista-observacoes">
+                            <option value="Sem alteração">
+                            <option value="Emb. violada">
+                            <option value="Emb. amassada / danificada">
+                            <option value="Emb. molhada / úmida">
+                            <option value="Entrega fora do prazo">
+                        </datalist>
                     
                     <button type="button" onclick="adicionarLinhaEncomenda()" style="margin: 15px 0;">+ Adicionar encomenda</button>
 
@@ -110,7 +122,7 @@
                             <th>Descrição</th>
                             <th>Obs</th>
                             <th>Empresa</th>
-                            <th>Recebedor (Portaria)</th>
+                            <th>Recebedor (Cancela)</th>
                             <th>Ação</th>
                         </tr>
                         </tr>

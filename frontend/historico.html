@@ -388,7 +388,7 @@
                 let csvContent = "\uFEFF";
                 
                 // Cabeçalho das colunas separados por ponto e vírgula (Padrão PT-BR do Excel)
-                csvContent += "Data Chegada;Destinatario;Descricao;Transportadora;Entregador;Status;Recebedor;Data Entrega;Porteiro Entrada;Militar Baixa;Observacoes\n";
+                csvContent += "Data de chegada;Cancela entrada;Destinatário;Descrição;Transportadora;Entregador;Status;Quem retirou;Data da Entrega;Cancela Saída;Observações\n";
 
                 dadosCompletos.forEach(enc => {
                 const dataChegada = enc.data_chegada ? new Date(enc.data_chegada).toLocaleString('pt-BR') : "";
@@ -397,6 +397,7 @@
                 // Trata cada campo envolvendo em aspas duplas para evitar que um ';' ou quebra de linha no texto quebre as colunas da planilha
                 const linha = [
                     dataChegada,
+                    `${enc.porteiro_graduacao} ${enc.porteiro_nome_guerra}`,
                     enc.destinatario,
                     enc.descricao,
                     enc.empresa_transporte,
@@ -404,7 +405,6 @@
                     enc.status,
                     enc.recebedor_nome,
                     dataEntrega,
-                    `${enc.porteiro_graduacao} ${enc.porteiro_nome_guerra}`,
                     enc.militar_entrega_grad ? `${enc.militar_entrega_grad} ${enc.militar_entrega_nome}` : "",
                     enc.observacao_baixa
                 ].map(campo => {

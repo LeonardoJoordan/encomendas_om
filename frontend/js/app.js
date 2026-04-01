@@ -8,18 +8,9 @@ function adicionarLinhaEncomenda() {
     novaLinha.className = "linha-encomenda";
     novaLinha.innerHTML = `
         <input type="text" class="destinatario" placeholder="Destinatário" required>
-        <input type="text" class="descricao" placeholder="Descrição do pacote" required>
-        <input type="text" class="observacoes" placeholder="Observações do pacote">
-        <select class="empresa-transporte" required>
-            <option value="">Empresa de transporte...</option>
-            <option value="Correios">Correios</option>
-            <option value="Mercado Livre">Mercado Livre</option>
-            <option value="Shopee">Shopee</option>
-            <option value="Temoo">Temoo</option>
-            <option value="Aliexpress">Aliexpress</option>
-            <option value="Moto Entrega">Moto Entrega Local</option>
-            <option value="Outros">Outros</option>
-        </select>
+        <input type="text" class="descricao" list="lista-descricoes" placeholder="Descrição do pacote" autocomplete="off" required>
+        <input type="text" class="observacoes" list="lista-observacoes" placeholder="Observações (opcional)" autocomplete="off">
+        <input type="text" class="empresa-transporte" list="lista-transportadoras" placeholder="Empresa de transporte..." autocomplete="off" required>
         <input type="text" class="entregador" placeholder="Nome entregador" required>
         <button type="button" class="btn-remover" onclick="this.parentElement.remove()">❌</button>
     `;
