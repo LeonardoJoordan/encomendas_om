@@ -48,7 +48,7 @@ Sistema robusto de gerenciamento de encomendas para portarias e recepções, pro
 ## ✨ Principais Funcionalidades
 * **Operação Ágil:** Formulários otimizados com autocompletar dinâmico para transportadoras e descrições.
 * **Tempo Real:** Painel de exibição (Cancela) atualizado via WebSockets, sem necessidade de recarregar a página.
-* **Histórico e Auditoria:** Registros paginados, filtragem avançada, relatórios para impressão (PDF) e exportação de dados brutos (CSV).
+* **Histórico e Auditoria:** Registros paginados, filtragem avançada, relatórios para impressão (nativa via navegador com CSS isolado) e exportação de dados brutos (CSV).
 * **Segurança:** Controle de acesso baseado em papéis (Admin/Cancela) e senhas criptografadas (SHA-256).
 * **Backup Automático:** Rotina isolada para backup diário do banco de dados e geração de relatório em lote.
 
@@ -90,6 +90,10 @@ Ao iniciar o servidor pela primeira vez, o sistema injeta automaticamente o usu�
 * **Senha:** `admin123`
 
 *(Nota: É obrigatório alterar esta senha no Painel Administrativo após o primeiro login).*
+
+### 🗄️ Localização do Banco de Dados (Produção)
+Para fins de backup manual, auditoria ou migração, o banco de dados SQLite em ambiente de produção (compilado) é gerado e mantido na pasta segura do usuário logado (padrão FHS/XDG):
+`~/.local/share/Encomendas_3RCC/database/`
 
 ## 💾 Configuração de Backup Automático (Linux)
 O projeto conta com um script satélite (`backup.py`) que roda de forma independente da API principal para garantir a integridade dos dados sem afetar a performance.

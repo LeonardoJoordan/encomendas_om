@@ -24,6 +24,7 @@ def compilar_projeto():
         "--include-module=sqlite3",     # <-- Garante o motor do banco de dados
         "--include-module=encodings",   # <-- Vacina contra o bug dos acentos (força o pacote UTF-8 nativo)
         "--include-data-dir=frontend=frontend",
+        "--include-data-file=index.html=index.html",
         "--output-dir=build",
         launcher_file
     ]

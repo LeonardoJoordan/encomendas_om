@@ -9,10 +9,18 @@ BR_TZ = timezone(timedelta(hours=-3))
 hoje_br = datetime.now(BR_TZ)
 data_str = hoje_br.strftime('%Y-%m-%d')
 
-# 2. Caminhos absolutos (resolve a partir de onde o script está rodando)
+# 2. Caminhos absolutos (Inteligência para achar o banco em Produção ou Dev)
+PROD_DB_PATH = os.path.expanduser("~/.local/share/Encomendas_3RCC/database/database.sqlite3")
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_PATH = os.path.join(BASE_DIR, "database", "database.sqlite3")
-BACKUP_DIR = os.path.join(BASE_DIR, "backups")
+
+# Se o banco de produção existir, usa ele e salva os backups na mesma estrutura segura. Senão, usa o ambiente local.
+if os.path.exists(PROD_DB_PATH):
+    DB_PATH = PROD_DB_PATH
+    BACKUP_DIR = os.path.expanduser("~/.local/share/Encomendas_3RCC/backups")
+else:
+    DB_PATH = os.path.join(BASE_DIR, "database", "database.sqlite3")
+    BACKUP_DIR = os.path.join(BASE_DIR, "backups")
+
 DB_BACKUP_DIR = os.path.join(BACKUP_DIR, "db")
 CSV_BACKUP_DIR = os.path.join(BACKUP_DIR, "relatorios_diarios")
 

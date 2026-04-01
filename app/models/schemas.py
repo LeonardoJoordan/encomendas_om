@@ -6,14 +6,18 @@ import os
 import sys
 
 # --- INÍCIO DA VACINA ANTI-ONEFILE DO NUITKA ---
-if getattr(sys, 'frozen', False):
-    # Modo compilado: pega a pasta exata onde o executável 'Encomendas_3ºRCC' está
-    BASE_DIR = os.path.dirname(sys.executable)
-else:
-    # Modo desenvolvimento: pega a raiz do projeto (duas pastas acima de app/models/)
-    BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# Detecção "Blindada": Nuitka define variáveis de ambiente que persistem no multiprocessing
+is_prod = getattr(sys, 'frozen', False) or "__nuitka_binary_dir" in globals() or os.environ.get('NUITKA_ONEFILE_PARENT')
 
-DB_DIR = os.path.join(BASE_DIR, "database")
+if is_prod:
+    # Caminho absoluto no padrão Linux XDG
+    DB_DIR = os.path.expanduser("~/.local/share/Encomendas_3RCC/database")
+else:
+    # Modo desenvolvimento: Raiz do projeto
+    BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    DB_DIR = os.path.join(BASE_DIR, "database")
+
+# CRÍTICO: Cria a pasta recursivamente se ela não existir
 os.makedirs(DB_DIR, exist_ok=True) # Força a criação da pasta no mundo real
 
 # Extrai o nome do arquivo original (ex: "banco.db") da sua URL e cria um caminho absoluto seguro

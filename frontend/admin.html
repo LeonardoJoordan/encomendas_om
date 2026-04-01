@@ -36,7 +36,11 @@
             <h2>Cadastrar / Editar Cancela</h2>
             <form id="form-admin">
                 <input type="hidden" id="porteiro-id">
-                <input type="text" id="porteiro-graduacao" placeholder="Graduação (ex: Sd, Cb, Sgt)" required>
+                <input type="text" id="porteiro-graduacao" list="lista-graduacoes" placeholder="Graduação (ex: Sd, Cb, Sgt)" autocomplete="off" required>
+                <datalist id="lista-graduacoes">
+                    <option value="Cb">
+                    <option value="Sd EP">
+                </datalist>
                 <input type="text" id="porteiro-nome-guerra" placeholder="Nome de Guerra" required>
                 <input type="text" id="porteiro-nome" placeholder="Nome Completo" required>
                 <input type="text" id="porteiro-login" placeholder="Login de Acesso" required>

@@ -325,10 +325,14 @@ def atualizar_porteiro(porteiro_id: int, dados: PorteiroUpdate, db: Session = De
 # ==========================================
 import sys
 
-# Descobre a pasta raiz real (vacina anti-onefile do Nuitka)
-if getattr(sys, 'frozen', False):
-    BASE_DIR = os.path.dirname(sys.executable)
+# Detecção "Blindada" para manter consistência com o restante do sistema
+is_prod = getattr(sys, 'frozen', False) or "__nuitka_binary_dir" in globals() or os.environ.get('NUITKA_ONEFILE_PARENT')
+
+if is_prod:
+    # No executável (Nuitka), o __file__ aponta corretamente para a pasta temporária extraída (/tmp/...)
+    BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 else:
+    # Em desenvolvimento, aponta para a raiz do projeto real
     BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 FRONTEND_DIR = os.path.join(BASE_DIR, "frontend")
