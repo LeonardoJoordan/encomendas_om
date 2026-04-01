@@ -2,10 +2,31 @@ from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, create_eng
 from sqlalchemy.orm import declarative_base, sessionmaker
 from datetime import datetime, timezone, timedelta
 from app.core.config import DATABASE_URL
+import os
+import sys
+
+# --- INÍCIO DA VACINA ANTI-ONEFILE DO NUITKA ---
+if getattr(sys, 'frozen', False):
+    # Modo compilado: pega a pasta exata onde o executável 'Encomendas_3ºRCC' está
+    BASE_DIR = os.path.dirname(sys.executable)
+else:
+    # Modo desenvolvimento: pega a raiz do projeto (duas pastas acima de app/models/)
+    BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+DB_DIR = os.path.join(BASE_DIR, "database")
+os.makedirs(DB_DIR, exist_ok=True) # Força a criação da pasta no mundo real
+
+# Extrai o nome do arquivo original (ex: "banco.db") da sua URL e cria um caminho absoluto seguro
+db_filename = DATABASE_URL.split("/")[-1]
+DB_PATH = os.path.join(DB_DIR, db_filename)
+ABSOLUTE_DB_URL = f"sqlite:///{DB_PATH}"
+# --- FIM DA VACINA ---
 
 BR_TZ = timezone(timedelta(hours=-3))
 Base = declarative_base()
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+
+# Substituímos a DATABASE_URL pela ABSOLUTE_DB_URL blindada
+engine = create_engine(ABSOLUTE_DB_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 def agora_br():

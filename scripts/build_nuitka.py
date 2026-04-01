@@ -2,23 +2,30 @@ import os
 import subprocess
 
 def compilar_projeto():
-    print("Iniciando a compilação do backend com Nuitka...")
+    print("Iniciando a compilação do projeto com Nuitka...")
     
     # Caminho base do projeto
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    main_file = os.path.join(base_dir, "app", "main.py")
     
-    # Parâmetros do Nuitka para empacotar o FastAPI e Uvicorn
+    # Apontamos para o launcher para abrir a interface gráfica com o IP
+    launcher_file = os.path.join(base_dir, "launcher.py")
+    
+    # Parâmetros do Nuitka blindados para Linux (Mint/Ubuntu/Debian)
     comando = [
-        "python", "-m", "nuitka",
+        "python3", "-m", "nuitka",
         "--standalone",
         "--onefile",
-        "--plugin-enable=pydantic",
+        "--output-filename=Encomendas_3ºRCC",
+        "--include-package=pydantic",     # <-- Trocamos o plugin pela inclusão direta do pacote
+        "--enable-plugin=tk-inter",     # <-- Embutir bibliotecas da janela gráfica (evita precisar de apt install)
         "--include-package=uvicorn",
         "--include-package=fastapi",
         "--include-package=sqlalchemy",
+        "--include-module=sqlite3",     # <-- Garante o motor do banco de dados
+        "--include-module=encodings",   # <-- Vacina contra o bug dos acentos (força o pacote UTF-8 nativo)
+        "--include-data-dir=frontend=frontend",
         "--output-dir=build",
-        main_file
+        launcher_file
     ]
     
     try:

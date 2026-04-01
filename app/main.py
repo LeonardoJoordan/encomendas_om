@@ -323,13 +323,23 @@ def atualizar_porteiro(porteiro_id: int, dados: PorteiroUpdate, db: Session = De
 # ==========================================
 # 🌐 SERVIDOR DE ARQUIVOS (Frontend)
 # ==========================================
+import sys
 
-# Monta a pasta frontend para servir CSS, JS e HTML secundários
-app.mount("/frontend", StaticFiles(directory="frontend"), name="frontend")
+# Descobre a pasta raiz real (vacina anti-onefile do Nuitka)
+if getattr(sys, 'frozen', False):
+    BASE_DIR = os.path.dirname(sys.executable)
+else:
+    BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# Rota principal que carrega o index.html da raiz
+FRONTEND_DIR = os.path.join(BASE_DIR, "frontend")
+INDEX_PATH = os.path.join(BASE_DIR, "index.html")
+
+# Monta a pasta frontend para servir CSS, JS e HTML secundários usando o caminho absoluto
+app.mount("/frontend", StaticFiles(directory=FRONTEND_DIR), name="frontend")
+
+# Rota principal que carrega o index.html da raiz usando o caminho absoluto
 @app.get("/")
 def serve_index():
-    if os.path.exists("index.html"):
-        return FileResponse("index.html")
-    return {"Erro": "Arquivo index.html não encontrado na raiz do projeto."}
+    if os.path.exists(INDEX_PATH):
+        return FileResponse(INDEX_PATH)
+    return {"Erro": f"Arquivo index.html não encontrado em: {INDEX_PATH}"}

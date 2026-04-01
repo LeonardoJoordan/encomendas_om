@@ -1,9 +1,15 @@
+import multiprocessing
+import uvicorn
+from app.main import app as fastapi_app
 import tkinter as tk
-import subprocess
 import sys
 import webbrowser
 import time
 import socket
+
+def worker_servidor():
+    """Roda o Uvicorn de forma nativa no processo filho, sem depender do terminal."""
+    uvicorn.run(fastapi_app, host="0.0.0.0", port=8000)
 
 def obter_ip_local():
     try:
@@ -58,10 +64,11 @@ class EncomendasLauncher:
 
     def ligar_servidor(self):
         # Inicia o Uvicorn como um subprocesso invisível usando o mesmo Python do ambiente
-        comando = [sys.executable, "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
         
         try:
-            self.processo_servidor = subprocess.Popen(comando)
+            # Inicia o servidor usando o multiprocessamento nativo do Python
+            self.processo_servidor = multiprocessing.Process(target=worker_servidor)
+            self.processo_servidor.start()
             self.lbl_status.config(text="Status: Rodando (Porta 8000)", fg="green")
             ip_rede = obter_ip_local()
             self.lbl_ip.config(text=f"Acesso Rede: http://{ip_rede}:8000")
@@ -75,8 +82,8 @@ class EncomendasLauncher:
 
     def desligar_servidor(self):
         if self.processo_servidor:
-            self.processo_servidor.terminate() # Mata o processo do servidor
-            self.processo_servidor.wait()      # Aguarda ele fechar completamente
+            self.processo_servidor.terminate()
+            self.processo_servidor.join()  # Aguarda o processo morrer de vez
             self.processo_servidor = None
             
         self.lbl_status.config(text="Status: Desligado", fg="red")
@@ -88,6 +95,9 @@ class EncomendasLauncher:
         self.root.destroy()
 
 if __name__ == "__main__":
+    # Trava obrigatória para o multiprocessing funcionar dentro de executáveis compilados (Nuitka/PyInstaller)
+    multiprocessing.freeze_support()
+    
     root = tk.Tk()
     app = EncomendasLauncher(root)
     root.mainloop()
