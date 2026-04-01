@@ -3,12 +3,24 @@ import subprocess
 import sys
 import webbrowser
 import time
+import socket
+
+def obter_ip_local():
+    try:
+        # Tenta conectar a um DNS público para forçar o SO a usar a interface de rede principal
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except Exception:
+        return "127.0.0.1"
 
 class EncomendasLauncher:
     def __init__(self, root):
         self.root = root
         self.root.title("🚀 Encomendas OM - Servidor")
-        self.root.geometry("350x180")
+        self.root.geometry("350x220")
         self.root.resizable(False, False)
         
         # Centraliza a janela
@@ -19,6 +31,9 @@ class EncomendasLauncher:
         # Elementos da Interface
         self.lbl_titulo = tk.Label(root, text="Gestor do Servidor", font=("Arial", 14, "bold"))
         self.lbl_titulo.pack(pady=10)
+
+        self.lbl_ip = tk.Label(root, text="", font=("Arial", 11, "bold"), fg="#0056b3")
+        self.lbl_ip.pack(pady=2)
 
         self.lbl_status = tk.Label(root, text="Status: Desligado", font=("Arial", 12), fg="red")
         self.lbl_status.pack(pady=5)
@@ -43,11 +58,13 @@ class EncomendasLauncher:
 
     def ligar_servidor(self):
         # Inicia o Uvicorn como um subprocesso invisível usando o mesmo Python do ambiente
-        comando = [sys.executable, "-m", "uvicorn", "app.main:app", "--host", "127.0.0.1", "--port", "8000"]
+        comando = [sys.executable, "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
         
         try:
             self.processo_servidor = subprocess.Popen(comando)
             self.lbl_status.config(text="Status: Rodando (Porta 8000)", fg="green")
+            ip_rede = obter_ip_local()
+            self.lbl_ip.config(text=f"Acesso Rede: http://{ip_rede}:8000")
             self.btn_toggle.config(text="Desligar Servidor", bg="#dc3545") # Fica vermelho
             
             # Aguarda um segundo para o servidor subir e abre o navegador
@@ -64,6 +81,7 @@ class EncomendasLauncher:
             
         self.lbl_status.config(text="Status: Desligado", fg="red")
         self.btn_toggle.config(text="Ligar Servidor", bg="#28a745") # Fica verde
+        self.lbl_ip.config(text="")
 
     def fechar_aplicativo(self):
         self.desligar_servidor()
